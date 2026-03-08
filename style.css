@@ -301,6 +301,13 @@ tr:hover td {
     color: #fff;
 }
 
+@media (max-width: 600px) {
+    .action-btn {
+        padding: 0.75rem 1rem; /* Better touch target */
+        flex: 1; /* Match widths on mobile cards */
+    }
+}
+
 .btn-add {
     background: var(--primary);
     color: var(--bg-dark);
@@ -338,10 +345,22 @@ tr:hover td {
     background: #1e293b;
     padding: 2.5rem;
     border-radius: 24px;
-    width: 90%;
+    width: 95%;
     max-width: 500px;
     border: 1px solid var(--glass-border);
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+@media (max-width: 600px) {
+    .modal {
+        width: 100%;
+        height: 100%;
+        max-height: 100vh;
+        border-radius: 0;
+        padding: 1.5rem;
+    }
 }
 
 .form-group {
@@ -359,10 +378,17 @@ tr:hover td {
     width: 100%;
     background: rgba(0, 0, 0, 0.2);
     border: 1px solid var(--glass-border);
-    padding: 0.75rem 1rem;
+    padding: 0.85rem 1rem; /* Slightly taller for touch */
     border-radius: 12px;
     color: white;
     outline: none;
+    font-size: 16px; /* Prevent iPhone auto-zoom */
+}
+
+@media (max-width: 600px) {
+    .form-group input, .form-group select {
+        padding: 1rem; /* Even larger on mobile */
+    }
 }
 
 .form-group input:focus {
@@ -424,9 +450,99 @@ tr:hover td {
 }
 
 @media (max-width: 768px) {
-    .container { padding: 1rem; }
-    h1 { font-size: 2rem; }
-    .table-wrapper { overflow-x: auto; }
-    .material-grid { grid-template-columns: repeat(2, 1fr); }
+    .container { padding: 0.75rem; }
+    header { margin-bottom: 2rem; }
+    h1 { font-size: 1.8rem; }
+    
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .card { padding: 1.5rem; }
+    
+    .summary-container {
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .summary-item {
+        padding: 0.75rem 1rem;
+        flex: 1;
+        min-width: 100px;
+    }
+
+    /* Table to Card Stack */
+    #materials-table, 
+    #materials-table thead, 
+    #materials-table tbody, 
+    #materials-table th, 
+    #materials-table td, 
+    #materials-table tr {
+        display: block;
+    }
+
+    #materials-table thead tr {
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+    }
+
+    #materials-table tr {
+        background: var(--bg-card);
+        margin-bottom: 1rem;
+        border-radius: 16px;
+        border: 1px solid var(--glass-border);
+        padding: 1rem;
+    }
+
+    #materials-table td {
+        border: none;
+        padding: 0.5rem 0;
+        position: relative;
+        padding-left: 50%;
+        text-align: right;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.95rem;
+    }
+
+    #materials-table td::before {
+        content: attr(data-label);
+        font-weight: 700;
+        color: var(--accent);
+        text-transform: uppercase;
+        font-size: 0.75rem;
+    }
+
+    #materials-table td.processor-info {
+        display: none !important;
+    }
+
+    body.mode-processar #materials-table td.processor-info,
+    body.mode-historico #materials-table td.processor-info {
+        display: flex !important;
+    }
+
+    .btn-group {
+        width: 100%;
+        justify-content: center;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--glass-border);
+        flex-wrap: wrap; /* Ensure buttons don't overflow */
+    }
+
+    .btn-add {
+        width: 100%;
+        justify-content: center;
+        padding: 1rem;
+        font-size: 1.1rem;
+        position: sticky;
+        bottom: 1rem;
+        z-index: 100;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
 }
 

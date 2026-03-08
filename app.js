@@ -56,17 +56,17 @@ class MaterialApp {
         filtered.forEach(item => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td>${this.formatDate(item.data_pedido)}</td>
-                <td>${item.desc}</td>
-                <td>${item.qtd}</td>
-                <td>${item.unid || '-'}</td>
-                <td>${item.solicitante || '-'}</td>
-                <td class="processor-info">R$ ${Number(item.valor || 0).toFixed(2)}</td>
-                <td><span class="status-badge status-${(item.status || 'solicitado').toLowerCase().replace(' ', '-')}">${item.status || 'Pedido solicitado'}</span></td>
-                <td class="processor-info">${item.processador || '-'}</td>
-                <td class="processor-info">${this.formatDate(item.data_processamento)}</td>
-                <td class="processor-info">${this.formatDate(item.data_entrega)}</td>
-                <td>
+                <td data-label="Data">${this.formatDate(item.data_pedido)}</td>
+                <td data-label="Descrição">${item.desc}</td>
+                <td data-label="Qtd">${item.qtd}</td>
+                <td data-label="Unidade">${item.unid || '-'}</td>
+                <td data-label="Solicitante">${item.solicitante || '-'}</td>
+                <td data-label="Valor" class="processor-info">R$ ${Number(item.valor || 0).toFixed(2)}</td>
+                <td data-label="Status"><span class="status-badge status-${(item.status || 'solicitado').toLowerCase().replace(' ', '-')}">${item.status || 'Pedido solicitado'}</span></td>
+                <td data-label="Processador" class="processor-info">${item.processador || '-'}</td>
+                <td data-label="Processamento" class="processor-info">${this.formatDate(item.data_processamento)}</td>
+                <td data-label="Entrega" class="processor-info">${this.formatDate(item.data_entrega)}</td>
+                <td data-label="Ações">
                     <div class="btn-group" style="white-space: nowrap; display: flex; gap: 0.5rem; justify-content: flex-end;">
                         ${this.mode === 'historico' && item.status !== 'Entregue' ? `
                             <button class="action-btn" title="Marcar como Entregue" onclick="app.markAsDelivered(${item.id})" style="color:var(--success); border-color: rgba(34, 197, 94, 0.3)">
