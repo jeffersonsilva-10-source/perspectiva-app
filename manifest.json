@@ -1,0 +1,17 @@
+{
+  "name": "Perspectiva - Gestão de Engenharia",
+  "short_name": "Perspectiva",
+  "description": "Gerenciador de pedidos de material e acompanhamento de obras - Perspectiva Projetos de Engenharia.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0a0f0d",
+  "theme_color": "#005844",
+  "icons": [
+    {
+      "src": "logo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any"
+    }
+  ]
+}
