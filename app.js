@@ -3,6 +3,8 @@ class MaterialApp {
         this.materials = JSON.parse(localStorage.getItem('obra_materials')) || [
             { id: 1, desc: 'Cimento', qtd: 5, unid: 'sacos', solicitante: 'Jamanta', status: 'Pedido solicitado', data_pedido: '2025-03-08', valor: 0, data_entrega: '', nota: '' }
         ];
+        this.reports = JSON.parse(localStorage.getItem('obra_reports')) || [];
+        this.currentReportPhotos = [];
         this.mode = 'solicitar';
         this.init();
     }
@@ -282,6 +284,318 @@ class MaterialApp {
             this.materials[index].status = 'Entregue';
             this.materials[index].data_entrega = new Date().toISOString().split('T')[0];
             this.renderTable();
+        }
+    }
+
+    // --- Report Management ---
+
+    enterReportMode(mode) {
+        if (mode === 'criar') {
+            this.currentReportPhotos = [];
+            this.setupPhotoUpload(4); // Default to 4
+            document.getElementById('report-photo-count').value = '4';
+            this.switchView('report-create-view');
+        } else if (mode === 'buscar') {
+            this.renderReportHistory();
+            this.switchView('report-history-view');
+        }
+    }
+
+    setupPhotoUpload(count) {
+        const grid = document.getElementById('photo-upload-grid');
+        grid.innerHTML = '';
+        this.currentReportPhotos = new Array(parseInt(count)).fill(null);
+        
+        for (let i = 0; i < count; i++) {
+            const slot = document.createElement('div');
+            slot.className = 'photo-slot';
+            slot.onclick = () => this.triggerPhotoUpload(i);
+            slot.id = `photo-slot-${i}`;
+            
+            slot.innerHTML = `
+                <div class="slot-placeholder">
+                    <i data-lucide="camera"></i>
+                    <span>Foto ${i + 1}</span>
+                </div>
+                <input type="file" id="file-input-${i}" style="display:none" accept="image/*" onchange="app.handlePhotoUpload(event, ${i})">
+            `;
+            grid.appendChild(slot);
+        }
+        lucide.createIcons();
+        this.updateReportActions();
+    }
+
+    triggerPhotoUpload(index) {
+        const input = document.getElementById(`file-input-${index}`);
+        if (input) input.click();
+    }
+
+    handlePhotoUpload(event, index) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const slot = document.getElementById(`photo-slot-${index}`);
+        slot.classList.add('loading');
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const imageData = e.target.result;
+            try {
+                const standardizedData = await this.standardizeImage(imageData);
+                
+                // CRITICAL FIX: Direct update and specific slot re-render
+                this.currentReportPhotos[index] = {
+                    src: standardizedData,
+                    title: this.getAISuggestion(index)
+                };
+                
+                this.renderPhotoSlot(index);
+                this.updateReportActions();
+            } catch (err) {
+                console.error('Erro ao processar imagem:', err);
+                alert('Erro ao processar imagem. Tente outro arquivo.');
+            } finally {
+                slot.classList.remove('loading');
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+
+    standardizeImage(base64Str) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const targetWidth = 800;
+                const targetHeight = 450; // 16:9
+                canvas.width = targetWidth;
+                canvas.height = targetHeight;
+                
+                const imgAspectRatio = img.width / img.height;
+                const targetAspectRatio = targetWidth / targetHeight;
+                
+                let renderWidth, renderHeight, offsetX, offsetY;
+                if (imgAspectRatio > targetAspectRatio) {
+                    renderHeight = targetHeight;
+                    renderWidth = img.width * (targetHeight / img.height);
+                    offsetX = (targetWidth - renderWidth) / 2;
+                    offsetY = 0;
+                } else {
+                    renderWidth = targetWidth;
+                    renderHeight = img.height * (targetWidth / img.width);
+                    offsetX = 0;
+                    offsetY = (targetHeight - renderHeight) / 2;
+                }
+                
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, targetWidth, targetHeight);
+                ctx.drawImage(img, offsetX, offsetY, renderWidth, renderHeight);
+                resolve(canvas.toDataURL('image/jpeg', 0.4));
+            };
+            img.onerror = reject;
+            img.src = base64Str;
+        });
+    }
+
+    getAISuggestion(index) {
+        const suggestions = [
+            'Vista frontal da obra', 'Andamento da fundação', 'Instalações hidráulicas',
+            'Revestimento interno', 'Estrutura metálica', 'Acabamento de reboco',
+            'Pintura externa', 'Instalação elétrica', 'Colocação de pisos', 'Vista aérea geral'
+        ];
+        return suggestions[index % suggestions.length];
+    }
+
+    renderPhotoSlot(index) {
+        const slot = document.getElementById(`photo-slot-${index}`);
+        const photo = this.currentReportPhotos[index];
+        if (!photo) return;
+
+        // CRITICAL FIX: Keep the input but hide standard UI
+        slot.innerHTML = `
+            <img src="${photo.src}" alt="Foto ${index + 1}">
+            <input type="text" class="photo-caption-input" 
+                   value="${photo.title}" 
+                   onchange="app.updatePhotoTitle(${index}, this.value)"
+                   onclick="event.stopPropagation()">
+            <input type="file" id="file-input-${index}" style="display:none" accept="image/*" onchange="app.handlePhotoUpload(event, ${index})">
+        `;
+    }
+
+    updatePhotoTitle(index, title) {
+        if (this.currentReportPhotos[index]) {
+            this.currentReportPhotos[index].title = title;
+        }
+    }
+
+    updateReportActions() {
+        const uploadedCount = this.currentReportPhotos.filter(p => p !== null).length;
+        const actions = document.querySelector('.report-actions');
+        actions.style.display = uploadedCount === this.currentReportPhotos.length ? 'flex' : 'none';
+    }
+
+    previewReport() {
+        const modal = document.getElementById('report-preview-modal');
+        const content = document.getElementById('report-preview-content');
+        
+        const count = this.currentReportPhotos.length;
+        
+        let html = `
+            <div style="text-align: center; border-bottom: 2px solid #005844; padding-bottom: 10px; margin-bottom: 10px;">
+                <img src="logo.jpg" style="max-height: 40px;">
+                <h1 style="font-size: 18px; color: #005844; margin: 5px 0;">RELATÓRIO FOTOGRÁFICO DE OBRA</h1>
+                <p style="font-size: 11px; color: #666;">Data: ${new Date().toLocaleDateString('pt-BR')}</p>
+            </div>
+            <div class="a4-photo-container">
+        `;
+
+        this.currentReportPhotos.forEach((photo) => {
+            if (photo) {
+                html += `
+                    <div class="a4-photo-item">
+                        <img src="${photo.src}">
+                        <p>${photo.title.toUpperCase()}</p>
+                    </div>
+                `;
+            }
+        });
+
+        html += '</div>';
+        content.innerHTML = html;
+        modal.style.display = 'flex';
+    }
+
+    closeReportPreview() {
+        document.getElementById('report-preview-modal').style.display = 'none';
+    }
+
+    async generateReportPDF() {
+        try {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const pageWidth = 210;
+            const pageHeight = 297;
+            const margin = 15;
+            const availableWidth = pageWidth - (margin * 2);
+
+            const getLogoBase64 = async () => {
+                try {
+                    const response = await fetch('logo.jpg');
+                    const blob = await response.blob();
+                    return new Promise(r => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => r(reader.result);
+                        reader.readAsDataURL(blob);
+                    });
+                } catch { return null; }
+            };
+
+            const logoStr = await getLogoBase64();
+            
+            const renderPage = (photosSlice, isNewPage = false) => {
+                if (isNewPage) doc.addPage();
+                
+                if (logoStr) doc.addImage(logoStr, 'JPEG', margin, margin, 35, 12);
+                doc.setFontSize(14);
+                doc.setTextColor(0, 88, 68);
+                doc.text('RELATÓRIO FOTOGRÁFICO', pageWidth/2, margin + 8, { align: 'center' });
+                doc.setDrawColor(0, 88, 68);
+                doc.line(margin, margin + 15, pageWidth - margin, margin + 15);
+                
+                const photoCount = photosSlice.length;
+                const photoWidth = (availableWidth - 10) / 2;
+                const photoHeight = (photoWidth * 9) / 16;
+                const rowGap = 15;
+                
+                // Top Centered Layout (Starting below header)
+                let startY = 40;
+
+                photosSlice.forEach((photo, i) => {
+                    const col = i % 2;
+                    const row = Math.floor(i / 2);
+                    const x = margin + (col * (photoWidth + 10));
+                    const y = startY + (row * (photoHeight + rowGap));
+                    
+                    if (photo && photo.src) {
+                        try {
+                            doc.addImage(photo.src, 'JPEG', x, y, photoWidth, photoHeight);
+                        } catch (e) { console.error('PDF Img Error:', e); }
+                    }
+                    doc.setFontSize(9);
+                    doc.setTextColor(50);
+                    doc.text(photo.title.toUpperCase(), x + (photoWidth / 2), y + photoHeight + 5, { align: 'center' });
+                });
+            };
+
+            for (let i = 0; i < this.currentReportPhotos.length; i += 6) {
+                renderPage(this.currentReportPhotos.slice(i, i + 6), i > 0);
+            }
+
+            doc.save(`Relatorio_Obra_${Date.now()}.pdf`);
+            this.saveReportToHistory();
+            this.closeReportPreview();
+            alert('Relatório gerado!');
+        } catch (err) {
+            console.error(err);
+            alert('Erro ao gerar PDF: ' + err.message);
+        }
+    }
+
+    saveReportToHistory() {
+        const report = {
+            id: Date.now(),
+            date: new Date().toISOString(),
+            photoCount: this.currentReportPhotos.length,
+            title: `Relatório de ${this.currentReportPhotos.length} fotos`,
+            photos: this.currentReportPhotos
+        };
+        this.reports.unshift(report);
+        localStorage.setItem('obra_reports', JSON.stringify(this.reports));
+    }
+
+    renderReportHistory() {
+        const list = document.getElementById('report-list');
+        list.innerHTML = '';
+        
+        if (this.reports.length === 0) {
+            list.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted);">Nenhum relatório encontrado.</p>';
+            return;
+        }
+
+        this.reports.forEach(report => {
+            const card = document.createElement('div');
+            card.className = 'report-item-card';
+            card.innerHTML = `
+                <h4>${report.title}</h4>
+                <div class="date">${new Date(report.date).toLocaleDateString('pt-BR')} ${new Date(report.date).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}</div>
+                <div style="display: flex; gap: 0.5rem; margin-top: auto;">
+                    <button class="action-btn" onclick="app.reprintReport(${report.id})">
+                        <i data-lucide="printer"></i> Reimprimir
+                    </button>
+                    <button class="action-btn" onclick="app.deleteReport(${report.id})" style="color: var(--danger)">
+                        <i data-lucide="trash-2"></i>
+                    </button>
+                </div>
+            `;
+            list.appendChild(card);
+        });
+        lucide.createIcons();
+    }
+
+    reprintReport(id) {
+        const report = this.reports.find(r => r.id === id);
+        if (report) {
+            this.currentReportPhotos = report.photos;
+            this.previewReport();
+        }
+    }
+
+    deleteReport(id) {
+        if (confirm('Deseja excluir este relatório do histórico?')) {
+            this.reports = this.reports.filter(r => r.id !== id);
+            localStorage.setItem('obra_reports', JSON.stringify(this.reports));
+            this.renderReportHistory();
         }
     }
 }

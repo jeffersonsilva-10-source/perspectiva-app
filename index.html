@@ -16,6 +16,8 @@
     <meta name="apple-mobile-web-app-title" content="Perspectiva">
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- jsPDF Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -39,12 +41,12 @@
                     <p>Gerencie pedidos, acompanhe entregas e controle o estoque da obra.</p>
                 </div>
 
-                <div class="card" onclick="alert('Funcionalidade em desenvolvimento!')">
+                <div class="card" onclick="app.switchView('report-view')">
                     <div class="card-icon">
-                        <i data-lucide="calendar"></i>
+                        <i data-lucide="clipboard-check"></i>
                     </div>
-                    <h3>Cronograma</h3>
-                    <p>Acompanhe os prazos e etapas da obra de forma visual e intuitiva.</p>
+                    <h3>Relatório de Obra</h3>
+                    <p>Crie relatórios fotográficos profissionais e acompanhe a evolução da obra.</p>
                 </div>
 
                 <div class="card" onclick="alert('Funcionalidade em desenvolvimento!')">
@@ -149,6 +151,112 @@
                 </table>
             </div>
         </section>
+
+        <!-- Report Dashboard View -->
+        <section id="report-view" class="view-container">
+            <button class="back-btn" onclick="app.switchView('home-view')">
+                <i data-lucide="arrow-left"></i> Voltar ao Início
+            </button>
+            <header>
+                <div class="logo-container">
+                    <img src="logo.jpg" alt="Perspectiva Logo" style="max-width: 180px;">
+                </div>
+                <h1 style="font-weight: 700; letter-spacing: -1px; color: var(--text-main);">Relatório de Obra</h1>
+                <p style="color: var(--text-muted); font-size: 1.1rem;">Perspectiva Projetos de Engenharia</p>
+            </header>
+
+            <div class="dashboard-grid" style="margin-top: 2rem;">
+                <div class="card" onclick="app.enterReportMode('criar')">
+                    <div class="card-icon" style="background: rgba(5, 150, 105, 0.2); color: var(--accent);">
+                        <i data-lucide="plus-circle"></i>
+                    </div>
+                    <h3>Criar Relatório</h3>
+                    <p>Gere um novo relatório fotográfico da obra.</p>
+                </div>
+
+                <div class="card" onclick="app.enterReportMode('buscar')">
+                    <div class="card-icon" style="background: rgba(56, 189, 248, 0.2); color: #7dd3fc;">
+                        <i data-lucide="search"></i>
+                    </div>
+                    <h3>Buscar Relatórios</h3>
+                    <p>Consulte e imprima relatórios já realizados.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Report Create View -->
+        <section id="report-create-view" class="view-container">
+            <button class="back-btn" onclick="app.switchView('report-view')">
+                <i data-lucide="arrow-left"></i> Voltar ao Painel
+            </button>
+            <header>
+                <h2 style="font-weight: 700; color: var(--text-main);">Novo Relatório Fotográfico</h2>
+                <p style="color: var(--text-muted);">Selecione a quantidade de fotos e faça o upload.</p>
+            </header>
+
+            <div class="report-setup-container">
+                <div class="form-group">
+                    <label>Quantidade de Fotos</label>
+                    <select id="report-photo-count" onchange="app.setupPhotoUpload(this.value)">
+                        <option value="2">2 Fotos</option>
+                        <option value="4" selected>4 Fotos</option>
+                        <option value="6">6 Fotos</option>
+                        <option value="8">8 Fotos</option>
+                        <option value="10">10 Fotos</option>
+                    </select>
+                </div>
+
+                <div id="photo-upload-grid" class="photo-grid">
+                    <!-- Dynamic upload slots will be injected here -->
+                </div>
+
+                <div class="report-actions" style="display: none; margin-top: 2rem; gap: 1rem; justify-content: center;">
+                    <button class="btn-add" onclick="app.previewReport()" style="background: var(--accent);">
+                        <i data-lucide="eye"></i> Pré-visualizar
+                    </button>
+                    <button id="btn-print-report" class="btn-add" onclick="app.generateReportPDF()">
+                        <i data-lucide="printer"></i> Imprimir PDF
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Report History View -->
+        <section id="report-history-view" class="view-container">
+            <button class="back-btn" onclick="app.switchView('report-view')">
+                <i data-lucide="arrow-left"></i> Voltar ao Painel
+            </button>
+            <header>
+                <h2 style="margin-bottom: 0.5rem;">Histórico de Relatórios</h2>
+            </header>
+            
+            <div id="report-list" class="report-list-grid">
+                <!-- Reports will be listed here -->
+            </div>
+        </section>
+
+        <!-- Report Preview Modal -->
+        <div id="report-preview-modal" class="modal-overlay">
+            <div class="modal" style="max-width: 900px; width: 95%;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <h2>Pré-visualização do Relatório</h2>
+                    <button class="action-btn" onclick="app.closeReportPreview()">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+                
+                <div id="report-preview-content" class="a4-preview">
+                    <!-- Preview content (logo, photos, titles) -->
+                </div>
+
+                <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+                    <button class="back-btn" style="margin:0" onclick="app.closeReportPreview()">Fechar</button>
+                    <button class="btn-add" style="margin:0" onclick="app.generateReportPDF()">
+                        <i data-lucide="printer"></i> Imprimir PDF
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Modal for Add/Edit -->
