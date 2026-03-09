@@ -303,10 +303,10 @@ tr:hover td {
 
 @media (max-width: 600px) {
     .action-btn {
-        padding: 0.4rem 0.6rem; /* Even more compact */
+        padding: 0.4rem 0.5rem; /* Extremely compact */
         flex: 1;
-        font-size: 0.75rem;
-        min-width: 0; /* Allow shrinking */
+        font-size: 0.7rem;
+        min-width: 0;
     }
     .action-btn i {
         width: 12px !important;
@@ -314,6 +314,7 @@ tr:hover td {
     }
     .action-btn span {
         white-space: nowrap;
+        font-size: 0.7rem;
     }
 }
 
@@ -491,6 +492,16 @@ tr:hover td {
         display: block;
     }
 
+    #materials-table {
+        min-width: auto !important; /* Stop table from forcing width */
+    }
+
+    .table-wrapper {
+        background: transparent;
+        border: none;
+        box-shadow: none;
+    }
+
     #materials-table thead tr {
         position: absolute;
         top: -9999px;
@@ -521,25 +532,36 @@ tr:hover td {
         font-weight: 700;
         color: var(--accent);
         text-transform: uppercase;
-        font-size: 0.75rem;
+        font-size: 0.7rem;
+        flex-shrink: 0;
+        margin-right: 1rem;
     }
 
     #materials-table td.processor-info {
         display: none !important;
     }
 
-    body.mode-processar #materials-table td.processor-info,
-    body.mode-historico #materials-table td.processor-info {
-        display: flex !important;
+    /* Ações row special handling on mobile */
+    #materials-table td[data-label="Ações"] {
+        display: block;
+        text-align: center;
+        padding-top: 1rem;
+        margin-top: 0.5rem;
+        border-top: 1px solid var(--glass-border);
+    }
+
+    #materials-table td[data-label="Ações"]::before {
+        display: block;
+        margin-bottom: 0.75rem;
+        margin-right: 0;
+        text-align: center;
     }
 
     .btn-group {
         width: 100%;
         justify-content: center;
-        margin-top: 1rem;
-        padding-top: 1rem;
-        border-top: 1px solid var(--glass-border);
-        flex-wrap: wrap; /* Ensure buttons don't overflow */
+        gap: 0.4rem;
+        flex-wrap: nowrap; /* Keep them together */
     }
 
     .btn-add {
