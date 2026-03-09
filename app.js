@@ -4,7 +4,9 @@ class MaterialApp {
             { id: 1, desc: 'Cimento', qtd: 5, unid: 'sacos', solicitante: 'Jamanta', status: 'Pedido solicitado', data_pedido: '2025-03-08', valor: 0, data_entrega: '', nota: '' }
         ];
         this.reports = JSON.parse(localStorage.getItem('obra_reports')) || [];
+        this.works = JSON.parse(localStorage.getItem('obra_works')) || [];
         this.currentReportPhotos = [];
+        this.workSearchQuery = '';
         this.mode = 'solicitar';
         this.init();
     }
@@ -12,6 +14,7 @@ class MaterialApp {
     init() {
         this.renderTable();
         this.setupForm();
+        this.setupWorkForm();
     }
 
     switchView(viewId) {
@@ -147,6 +150,120 @@ class MaterialApp {
             this.renderTable();
             this.closeModal();
         };
+    }
+
+    setupWorkForm() {
+        const form = document.getElementById('work-form');
+        if (!form) return;
+        form.onsubmit = (e) => {
+            e.preventDefault();
+            const id = document.getElementById('work-id').value;
+            const data = {
+                id: id ? parseInt(id) : Date.now(),
+                name: document.getElementById('work-name').value,
+                address: document.getElementById('work-address').value,
+                owner: document.getElementById('work-owner').value,
+                phone: document.getElementById('work-phone').value,
+                date_created: id ? this.works.find(w => w.id === parseInt(id)).date_created : new Date().toISOString()
+            };
+
+            if (id) {
+                const index = this.works.findIndex(w => w.id === parseInt(id));
+                this.works[index] = data;
+                alert('Obra atualizada com sucesso!');
+            } else {
+                this.works.push(data);
+                alert('Obra cadastrada com sucesso!');
+            }
+
+            localStorage.setItem('obra_works', JSON.stringify(this.works));
+            form.reset();
+            document.getElementById('work-id').value = '';
+            this.switchView('works-view');
+        };
+    }
+
+    enterWorksMode(mode) {
+        if (mode === 'cadastrar') {
+            document.getElementById('work-form').reset();
+            document.getElementById('work-id').value = '';
+            this.switchView('works-create-view');
+        } else if (mode === 'buscar') {
+            this.workSearchQuery = '';
+            const searchInput = document.getElementById('work-search');
+            if (searchInput) searchInput.value = '';
+            this.renderWorksList();
+            this.switchView('works-list-view');
+        }
+    }
+
+    handleWorkSearch(query) {
+        this.workSearchQuery = query.toLowerCase();
+        this.renderWorksList();
+    }
+
+    renderWorksList() {
+        const tbody = document.getElementById('works-body');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        if (this.works.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Nenhuma obra cadastrada ainda.</td></tr>';
+            return;
+        }
+
+        let filtered = this.works;
+        if (this.workSearchQuery) {
+            filtered = this.works.filter(w => w.name.toLowerCase().includes(this.workSearchQuery));
+        }
+
+        // Sort by date (descending)
+        const sortedWorks = [...filtered].sort((a, b) => new Date(b.date_created) - new Date(a.date_created));
+
+        sortedWorks.forEach(work => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td data-label="Data">${this.formatDate(work.date_created.split('T')[0])}</td>
+                <td data-label="Nome">${work.name}</td>
+                <td data-label="Endereço">${work.address}</td>
+                <td data-label="Proprietário">${work.owner}</td>
+                <td data-label="Telefone">${work.phone}</td>
+                <td data-label="Ações">
+                    <div class="btn-group" style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                        <button class="action-btn" title="Editar" onclick="app.editWork(${work.id})">
+                            <i data-lucide="edit-2" style="width:16px; margin-right: 4px;"></i>
+                            <span>Editar</span>
+                        </button>
+                        <button class="action-btn" title="Excluir" onclick="app.deleteWork(${work.id})" style="color:var(--danger)">
+                            <i data-lucide="trash-2" style="width:16px; margin-right: 4px;"></i>
+                            <span>Excluir</span>
+                        </button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+        lucide.createIcons();
+    }
+
+    editWork(id) {
+        const work = this.works.find(w => w.id === id);
+        if (work) {
+            document.getElementById('work-id').value = work.id;
+            document.getElementById('work-name').value = work.name;
+            document.getElementById('work-address').value = work.address;
+            document.getElementById('work-owner').value = work.owner;
+            document.getElementById('work-phone').value = work.phone;
+            this.switchView('works-create-view');
+        }
+    }
+
+    deleteWork(id) {
+        if (confirm('Tem certeza que deseja excluir esta obra?')) {
+            this.works = this.works.filter(w => w.id !== id);
+            localStorage.setItem('obra_works', JSON.stringify(this.works));
+            this.renderWorksList();
+        }
     }
 
     selectMaterial(material) {

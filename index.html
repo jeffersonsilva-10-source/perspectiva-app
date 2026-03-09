@@ -56,6 +56,14 @@
                     <h3>Financeiro</h3>
                     <p>Controle gastos, orçamentos e pagamentos de fornecedores.</p>
                 </div>
+
+                <div class="card" onclick="app.switchView('works-view')">
+                    <div class="card-icon">
+                        <i data-lucide="building-2"></i>
+                    </div>
+                    <h3>Gerenciar Obras</h3>
+                    <p>Cadastre e gerencie as informações de cada obra individualmente.</p>
+                </div>
             </div>
         </main>
 
@@ -92,6 +100,122 @@
                     <h3>Histórico de Solicitações</h3>
                     <p>Consulte todos os pedidos já processados.</p>
                 </div>
+            </div>
+        </section>
+
+        <!-- Works Management View -->
+        <section id="works-view" class="view-container">
+            <button class="back-btn" onclick="app.switchView('home-view')">
+                <i data-lucide="arrow-left"></i> Voltar ao Início
+            </button>
+            <header>
+                <div class="logo-container">
+                    <img src="logo.jpg" alt="Perspectiva Logo" style="max-width: 180px;">
+                </div>
+                <h1 style="font-weight: 700; letter-spacing: -1px; color: var(--text-main);">Gerenciar Obras</h1>
+                <p style="color: var(--text-muted); font-size: 1.1rem;">Perspectiva Projetos de Engenharia</p>
+            </header>
+
+            <div class="dashboard-grid" style="margin-top: 2rem;">
+                <div class="card" onclick="app.enterWorksMode('cadastrar')">
+                    <div class="card-icon" style="background: rgba(5, 150, 105, 0.2); color: var(--accent);">
+                        <i data-lucide="plus-circle"></i>
+                    </div>
+                    <h3>Cadastrar Obra</h3>
+                    <p>Adicione uma nova obra ao sistema de gestão.</p>
+                </div>
+
+                <div class="card" onclick="app.enterWorksMode('buscar')">
+                    <div class="card-icon" style="background: rgba(56, 189, 248, 0.2); color: #7dd3fc;">
+                        <i data-lucide="list"></i>
+                    </div>
+                    <h3>Lista de Obras</h3>
+                    <p>Visualize e edite as obras já cadastradas.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Works Create View -->
+        <section id="works-create-view" class="view-container">
+            <button class="back-btn" onclick="app.switchView('works-view')">
+                <i data-lucide="arrow-left"></i> Voltar ao Painel
+            </button>
+            <header>
+                <div class="logo-container">
+                    <img src="logo.jpg" alt="Perspectiva Logo" style="max-width: 150px;">
+                </div>
+                <h2 style="font-weight: 700; color: var(--text-main);">Cadastrar Nova Obra</h2>
+                <p style="color: var(--text-muted);">Preencha os dados abaixo para registrar uma nova obra.</p>
+            </header>
+
+            <div class="form-container" style="max-width: 600px; margin: 2rem auto; padding: 2rem; background: rgba(255, 255, 255, 0.05); border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.1);">
+                <form id="work-form">
+                    <input type="hidden" id="work-id">
+                    <div class="form-group">
+                        <label>Dê um nome para a obra</label>
+                        <input type="text" id="work-name" placeholder="Ex: Reforma Residencial - Cliente X" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Endereço da obra</label>
+                        <input type="text" id="work-address" placeholder="Rua, Número, Bairro, Cidade" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Nome do proprietário</label>
+                        <input type="text" id="work-owner" placeholder="Nome completo" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Telefone para contato</label>
+                        <input type="tel" id="work-phone" placeholder="(00) 00000-0000" required>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+                        <button type="button" class="back-btn" style="margin:0" onclick="app.switchView('works-view')">Cancelar</button>
+                        <button type="submit" class="btn-add" style="margin:0">
+                            <i data-lucide="save"></i> Salvar Obra
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- Works List View -->
+        <section id="works-list-view" class="view-container">
+            <button class="back-btn" onclick="app.switchView('works-view')">
+                <i data-lucide="arrow-left"></i> Voltar ao Painel
+            </button>
+            <header>
+                <div class="logo-container">
+                    <img src="logo.jpg" alt="Perspectiva Logo" style="max-width: 150px;">
+                </div>
+                <h2 style="font-weight: 700; color: var(--text-main);">Obras Cadastradas</h2>
+                <p style="color: var(--text-muted);">Visualize o histórico de obras registradas.</p>
+            </header>
+            
+            <div class="search-container" style="margin-top: 1.5rem; margin-bottom: 1.5rem;">
+                <div class="form-group">
+                    <input type="text" id="work-search" placeholder="Buscar por nome da obra..." oninput="app.handleWorkSearch(this.value)">
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table id="works-table">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Nome da Obra</th>
+                            <th>Endereço</th>
+                            <th>Proprietário</th>
+                            <th>Telefone</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="works-body">
+                        <!-- Content will be injected by JS -->
+                    </tbody>
+                </table>
             </div>
         </section>
 
