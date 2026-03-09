@@ -303,8 +303,12 @@ tr:hover td {
 
 @media (max-width: 600px) {
     .action-btn {
-        padding: 0.75rem 1rem; /* Better touch target */
-        flex: 1; /* Match widths on mobile cards */
+        padding: 0.5rem 0.75rem; /* Reduced from 0.75rem 1rem */
+        flex: 1;
+        font-size: 0.8rem; /* Slightly smaller text */
+    }
+    .action-btn i {
+        width: 14px !important; /* Smaller icons */
     }
 }
 
