@@ -9,6 +9,9 @@ class MaterialApp {
         this.workSearchQuery = '';
         this.materialSearchQuery = '';
         this.mode = 'solicitar';
+        this.viewHistory = [];
+        this.currentView = 'home-view';
+        this.materialCart = [];
         this.init();
     }
 
@@ -18,10 +21,30 @@ class MaterialApp {
         this.setupWorkForm();
     }
 
-    switchView(viewId) {
+    switchView(viewId, isBack = false) {
+        if (!isBack && this.currentView !== viewId) {
+            this.viewHistory.push(this.currentView);
+        }
+        
+        this.currentView = viewId;
         document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
-        document.getElementById(viewId).classList.add('active');
+        const targetView = document.getElementById(viewId);
+        if (targetView) targetView.classList.add('active');
         lucide.createIcons();
+    }
+
+    goBack() {
+        if (this.viewHistory.length > 0) {
+            const previousView = this.viewHistory.pop();
+            this.switchView(previousView, true);
+        } else {
+            this.switchView('home-view');
+        }
+    }
+
+    goHome() {
+        this.viewHistory = [];
+        this.switchView('home-view');
     }
 
     enterMaterialMode(mode) {
@@ -83,14 +106,17 @@ class MaterialApp {
 
         filtered.forEach(item => {
             const tr = document.createElement('tr');
+            const isProcessar = this.mode === 'processar';
             const isSolicitado = item.status === 'Pedido solicitado';
             tr.innerHTML = `
-                <td class="select-col" data-label="Selecionar">
-                    <input type="checkbox" class="row-checkbox select-checkbox" 
-                           data-id="${item.id}" 
-                           onchange="app.updateSelectionUI()"
-                           ${!isSolicitado || this.mode !== 'processar' ? 'disabled' : ''}>
-                </td>
+                ${isProcessar ? `
+                    <td class="select-col" data-label="Selecionar">
+                        <input type="checkbox" class="row-checkbox select-checkbox" 
+                               data-id="${item.id}" 
+                               onchange="app.updateSelectionUI()"
+                               ${!isSolicitado ? 'disabled' : ''}>
+                    </td>
+                ` : ''}
                 <td data-label="Data">${this.formatDate(item.data_pedido)}</td>
                 <td data-label="Descrição">${item.desc}</td>
                 <td data-label="Qtd">${item.qtd}</td>
@@ -177,28 +203,35 @@ class MaterialApp {
 
         // Automatically determine greeting
         const hour = new Date().getHours();
-        let greeting = "Bom dia";
-        if (hour >= 12 && hour < 18) greeting = "Boa tarde";
-        else if (hour >= 18 || hour < 5) greeting = "Boa noite";
+        let periodo = "dia";
+        if (hour >= 12 && hour < 18) periodo = "tarde";
+        else if (hour >= 18 || hour < 5) periodo = "noite";
 
-        // Group by Work
-        const groupedByWork = {};
+        // Group by Work ID
+        const grouped = {};
         selectedMaterials.forEach(m => {
-            const workName = m.obra_name || "Obra Geral";
-            if (!groupedByWork[workName]) groupedByWork[workName] = [];
-            groupedByWork[workName].push(m);
+            const workId = m.obra_id;
+            if (!grouped[workId]) grouped[workId] = [];
+            grouped[workId].push(m);
         });
 
-        let fullMessage = "";
-        const workNames = Object.keys(groupedByWork);
+        const groupKeys = Object.keys(grouped);
 
-        workNames.forEach((workName, index) => {
-            const items = groupedByWork[workName];
-            const itemsText = items.map(m => `• ${m.qtd}${m.unid || ''} de ${m.desc}`).join('\n');
+        // Send by work
+        groupKeys.forEach(workId => {
+            const workMaterials = grouped[workId];
+            const work = this.works.find(w => w.id == workId); // Loose equality for ID
+            const obraName = work ? work.nome : 'Obra não identificada';
+            const obraEndereco = work ? work.endereco : '';
+            const obraPontoRef = work ? (work.ponto_referencia || '') : '';
             
-            fullMessage += `${greeting} estamos precisando dos seguintes materiais na ${workName}:\n${itemsText}\n\nPor favor, nos encaminhe a nota desse pedido o quanto antes para providenciarmos o pagamento da mesma.`;
+            let materialList = workMaterials.map(m => `- ${m.qtd} ${m.unid} de ${m.desc}`).join('\n');
             
-            if (index < workNames.length - 1) fullMessage += "\n\n---\n\n";
+            const fullEndereco = obraEndereco ? `\nLocal: ${obraEndereco}${obraPontoRef ? ` (Ref: ${obraPontoRef})` : ''}` : '';
+
+            const text = encodeURIComponent(`Bom ${periodo}!\nEstamos precisando dos seguintes materiais na obra *${obraName}*:\n\n${materialList}${fullEndereco}\n\nPor favor, nos encaminhe a nota desse pedido o quanto antes para providenciarmos o pagamento da mesma.`);
+            
+            window.open(`https://wa.me/?text=${text}`, '_blank');
         });
 
         // Update status of all selected
@@ -207,17 +240,12 @@ class MaterialApp {
             if (index !== -1) {
                 this.materials[index].status = 'Pedido aguardando entrega';
                 this.materials[index].data_processamento = new Date().toISOString().split('T')[0];
-                // Try to find a processor name from previous orders or current user if available
                 if (!this.materials[index].processador) this.materials[index].processador = 'Sistemas'; 
             }
         });
 
         this.renderTable();
 
-        // Send to WhatsApp
-        const encodedMsg = encodeURIComponent(fullMessage);
-        window.open(`https://wa.me/?text=${encodedMsg}`, '_blank');
-        
         // Reset check all
         const selectAll = document.getElementById('select-all-materials');
         if (selectAll) selectAll.checked = false;
@@ -240,8 +268,34 @@ class MaterialApp {
         form.onsubmit = (e) => {
             e.preventDefault();
             const id = document.getElementById('edit-id').value;
+            
+            // If we are in "Solicitar" mode and there are items in the cart or fields are filled, process them
+            if (this.mode === 'solicitar' && !id) {
+                // If fields are filled, try to add the current item to the cart first
+                const currentDesc = document.getElementById('desc').value;
+                const currentQtd = document.getElementById('qtd').value;
+                if (currentDesc && currentQtd) {
+                    this.addToCart();
+                }
+
+                if (this.materialCart.length > 0) {
+                    this.materialCart.forEach(item => {
+                        this.materials.push({
+                            ...item,
+                            id: Date.now() + Math.random(), // Unique ID for each
+                            status: 'Pedido solicitado'
+                        });
+                    });
+                    this.materialCart = [];
+                    this.renderTable();
+                    this.closeModal();
+                    return;
+                }
+            }
+
+            // Regular single-item save logic (for editing or single requests)
             const unidSelect = document.getElementById('unid').value;
-            const customUnid = document.getElementById('custom-unid').value;
+            const customUnid = document.getElementById('custom-unid') ? document.getElementById('custom-unid').value : '';
             
             const data = {
                 id: id ? parseInt(id) : Date.now(),
@@ -264,12 +318,107 @@ class MaterialApp {
                 const index = this.materials.findIndex(m => m.id === parseInt(id));
                 this.materials[index] = data;
             } else {
+                if (!data.desc || !data.qtd) {
+                    alert('Por favor, preencha a descrição e a quantidade.');
+                    return;
+                }
                 this.materials.push(data);
             }
 
             this.renderTable();
             this.closeModal();
         };
+    }
+
+    addToCart() {
+        const desc = document.getElementById('desc').value;
+        const qtd = document.getElementById('qtd').value;
+        const unidSelect = document.getElementById('unid').value;
+        const customUnid = document.getElementById('custom-unid') ? document.getElementById('custom-unid').value : '';
+        const workSelect = document.getElementById('work-select');
+        const solicitante = document.getElementById('solicitante').value;
+        const data_pedido = document.getElementById('data_pedido').value;
+
+        if (!desc || !qtd || !workSelect.value || !solicitante || !data_pedido) {
+            alert('Preencha os dados da obra, solicitante e os campos do material antes de adicionar ao bloco.');
+            return;
+        }
+
+        const item = {
+            tempId: Date.now(),
+            desc,
+            qtd,
+            unid: unidSelect === 'custom' ? customUnid : unidSelect,
+            solicitante,
+            data_pedido,
+            obra_id: workSelect.value,
+            obra_name: workSelect.options[workSelect.selectedIndex].text,
+            valor: 0,
+            data_entrega: '',
+            nota: '',
+            processador: '',
+            data_processamento: ''
+        };
+
+        this.materialCart.push(item);
+        
+        // Clear all item fields
+        document.getElementById('desc').value = '';
+        document.getElementById('qtd').value = '';
+        document.getElementById('unid').value = '';
+        if (document.getElementById('custom-unid')) {
+            document.getElementById('custom-unid').value = '';
+            document.getElementById('custom-unid-group').style.display = 'none';
+        }
+        document.querySelectorAll('.material-chip').forEach(c => c.classList.remove('selected'));
+        if (document.getElementById('custom-material-group')) document.getElementById('custom-material-group').style.display = 'none';
+
+        this.renderCart();
+    }
+
+    removeFromCart(tempId) {
+        this.materialCart = this.materialCart.filter(item => item.tempId !== tempId);
+        this.renderCart();
+    }
+
+    renderCart() {
+        const cartSection = document.getElementById('cart-section');
+        const cartList = document.getElementById('cart-list');
+        const cartCount = document.getElementById('cart-count');
+
+        if (this.materialCart.length > 0) {
+            cartSection.style.display = 'block';
+            cartCount.innerText = this.materialCart.length;
+            cartList.innerHTML = `
+                <table class="cart-table">
+                    <thead>
+                        <tr>
+                            <th>Qtd</th>
+                            <th>Unid</th>
+                            <th>Descrição</th>
+                            <th style="width: 40px"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${this.materialCart.map(item => `
+                            <tr>
+                                <td><strong>${item.qtd}</strong></td>
+                                <td>${item.unid}</td>
+                                <td>${item.desc}</td>
+                                <td style="text-align: center">
+                                    <button type="button" class="cart-btn-remove" onclick="app.removeFromCart(${item.tempId})">
+                                        <i data-lucide="trash-2" style="width:16px"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            lucide.createIcons();
+        } else {
+            cartSection.style.display = 'none';
+        }
     }
 
     setupWorkForm() {
@@ -421,69 +570,92 @@ class MaterialApp {
             this.works.forEach(work => {
                 const option = document.createElement('option');
                 option.value = work.id;
-                option.textContent = work.name;
+                option.textContent = work.nome; // Use .nome
                 workSelect.appendChild(option);
             });
         }
 
         document.getElementById('material-modal').style.display = 'flex';
-        document.getElementById('modal-title').innerText = data ? 'Alterar Pedido' : 'Novo Pedido';
         
+        const isProcessar = this.mode === 'processar';
+        const modalTitle = document.getElementById('modal-title');
+        const solicitarGrp = document.getElementById('solicitar-group');
+        const processarGrp = document.getElementById('processar-group');
+        const requestSum = document.getElementById('request-summary');
+        const submitBtnText = document.getElementById('btn-submit-text');
+
+        if (isProcessar) {
+            if (modalTitle) modalTitle.innerText = 'Processar Pedido';
+            if (solicitarGrp) solicitarGrp.style.display = 'none';
+            if (processarGrp) processarGrp.style.display = 'block';
+            if (requestSum) requestSum.style.display = 'block';
+            if (submitBtnText) submitBtnText.innerText = 'Salvar Alterações';
+            
+            document.getElementById('work-select').required = false;
+            document.getElementById('data_pedido').required = false;
+            document.getElementById('processador').required = true;
+            document.getElementById('data_processamento').required = true;
+        } else {
+            if (modalTitle) modalTitle.innerText = data ? 'Alterar Pedido' : 'Novo Pedido';
+            if (solicitarGrp) solicitarGrp.style.display = 'block';
+            if (processarGrp) processarGrp.style.display = 'none';
+            if (requestSum) requestSum.style.display = 'none';
+            if (submitBtnText) submitBtnText.innerText = data ? 'Salvar Alterações' : 'Finalizar Solicitação';
+            
+            document.getElementById('work-select').required = true;
+            document.getElementById('data_pedido').required = true;
+            document.getElementById('processador').required = false;
+            document.getElementById('data_processamento').required = false;
+        }
+        
+        // Reset Cart logic
+        this.materialCart = [];
+        this.renderCart();
+
         document.getElementById('custom-material-group').style.display = 'none';
         document.querySelectorAll('.material-chip').forEach(c => c.classList.remove('selected'));
 
+        const itemArea = document.getElementById('solicitar-item-area');
+        if (itemArea) itemArea.style.display = (this.mode === 'solicitar' && !data) ? 'block' : 'none';
+
         if (data) {
             document.getElementById('edit-id').value = data.id;
-            document.getElementById('desc').value = data.desc;
-            document.getElementById('qtd').value = data.qtd;
+            document.getElementById('desc').value = data.desc || '';
+            document.getElementById('qtd').value = data.qtd || '';
             
             // Populate Summary (for processor mode)
-            document.getElementById('sum-desc').innerText = data.desc;
-            document.getElementById('sum-qtd').innerText = data.qtd;
-            document.getElementById('sum-unid').innerText = data.unid || '';
-            document.getElementById('sum-solicitante').innerText = data.solicitante || '-';
-            document.getElementById('sum-data').innerText = this.formatDate(data.data_pedido);
+            const sumDesc = document.getElementById('sum-desc');
+            const sumQtd = document.getElementById('sum-qtd');
+            const sumUnid = document.getElementById('sum-unid');
+            const sumSolicitante = document.getElementById('sum-solicitante');
+            const sumData = document.getElementById('sum-data');
+
+            if (sumDesc) sumDesc.innerText = data.desc || '-';
+            if (sumQtd) sumQtd.innerText = data.qtd || '-';
+            if (sumUnid) sumUnid.innerText = data.unid || '';
+            if (sumSolicitante) sumSolicitante.innerText = data.solicitante || '-';
+            if (sumData) sumData.innerText = data.data_pedido ? this.formatDate(data.data_pedido) : '-';
 
             // Handle unit loading
-            const standardUnits = ['kg', 'sacos', 'm³', 'm²', 'unid', 'pacotes'];
-            if (standardUnits.includes(data.unid)) {
-                document.getElementById('unid').value = data.unid;
-                document.getElementById('custom-unid-group').style.display = 'none';
-            } else if (data.unid) {
-                document.getElementById('unid').value = 'custom';
-                document.getElementById('custom-unid-group').style.display = 'block';
-                document.getElementById('custom-unid').value = data.unid;
-            } else {
-                document.getElementById('unid').value = '';
-                document.getElementById('custom-unid-group').style.display = 'none';
+            const unitSelect = document.getElementById('unid');
+            const standardUnits = ['kg', 'sacos', 'm³', 'm²', 'unid', 'pacotes', 'milheiros'];
+            if (unitSelect) {
+                if (standardUnits.includes(data.unid)) {
+                    unitSelect.value = data.unid;
+                    document.getElementById('custom-unid-group').style.display = 'none';
+                } else if (data.unid) {
+                    unitSelect.value = 'custom';
+                    document.getElementById('custom-unid-group').style.display = 'block';
+                    document.getElementById('custom-unid').value = data.unid;
+                } else {
+                    unitSelect.value = '';
+                    document.getElementById('custom-unid-group').style.display = 'none';
+                }
             }
             
             document.getElementById('work-select').value = data.obra_id || '';
             document.getElementById('solicitante').value = data.solicitante || '';
-            document.getElementById('data_pedido').value = data.data_pedido;
-            
-            // Processor fields requirements
-            const isProcessar = this.mode === 'processar';
-            document.getElementById('processador').required = isProcessar;
-            document.getElementById('data_processamento').required = isProcessar;
-            
-            // Adjust Solicitor fields requirements (they should only be required when visible)
-            const isSolicitar = !isProcessar;
-            document.getElementById('data_pedido').required = isSolicitar;
-            document.getElementById('qtd').required = isSolicitar;
-            document.getElementById('unid').required = isSolicitar;
-            document.getElementById('solicitante').required = isSolicitar;
-            
-            // Critical: Ensure custom fields don't block saving if they are hidden
-            const customUnid = document.getElementById('custom-unid');
-            if (customUnid) customUnid.required = isSolicitar && document.getElementById('unid').value === 'custom';
-
-            // Automatic status management for processing
-            let currentStatus = data.status || 'Pedido solicitado';
-            if (this.mode === 'processar' && currentStatus === 'Pedido solicitado') {
-                currentStatus = 'Pedido aguardando entrega';
-            }
-            // No longer setting document.getElementById('status').value since it's removed
+            document.getElementById('data_pedido').value = data.data_pedido || '';
             
             document.getElementById('valor').value = data.valor || '';
             document.getElementById('data_entrega').value = data.data_entrega || '';
@@ -493,15 +665,6 @@ class MaterialApp {
         } else {
             document.getElementById('material-form').reset();
             document.getElementById('edit-id').value = '';
-            
-            // Reset requirements for solicitar mode
-            document.getElementById('processador').required = false;
-            document.getElementById('data_processamento').required = false;
-            document.getElementById('data_pedido').required = true;
-            document.getElementById('qtd').required = true;
-            document.getElementById('unid').required = true;
-            document.getElementById('solicitante').required = true;
-
             document.getElementById('data_pedido').value = new Date().toISOString().split('T')[0];
             document.getElementById('data_processamento').value = new Date().toISOString().split('T')[0];
             document.getElementById('custom-unid-group').style.display = 'none';
