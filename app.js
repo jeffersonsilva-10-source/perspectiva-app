@@ -25,7 +25,7 @@ class MaterialApp {
         if (!isBack && this.currentView !== viewId) {
             this.viewHistory.push(this.currentView);
         }
-        
+
         this.currentView = viewId;
         document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
         const targetView = document.getElementById(viewId);
@@ -50,7 +50,7 @@ class MaterialApp {
     enterMaterialMode(mode) {
         this.mode = mode;
         document.body.className = `mode-${mode}`;
-        
+
         // Update Title
         const titleMap = {
             'solicitar': 'Solicitar Material',
@@ -94,11 +94,11 @@ class MaterialApp {
             filtered = this.materials.filter(m => m.status === 'Pedido solicitado');
         } else if (this.mode === 'historico') {
             filtered = this.materials.filter(m => m.status !== 'Pedido solicitado');
-            
+
             if (this.materialSearchQuery) {
                 const query = this.materialSearchQuery.toLowerCase();
-                filtered = filtered.filter(m => 
-                    (m.desc && m.desc.toLowerCase().includes(query)) || 
+                filtered = filtered.filter(m =>
+                    (m.desc && m.desc.toLowerCase().includes(query)) ||
                     (m.obra_name && m.obra_name.toLowerCase().includes(query))
                 );
             }
@@ -181,7 +181,7 @@ class MaterialApp {
         const count = selectedCheckboxes.length;
         const bar = document.getElementById('bulk-action-bar');
         const countEl = document.getElementById('selected-count');
-        
+
         if (countEl) countEl.innerText = count;
         if (bar) {
             if (count > 0 && this.mode === 'processar') {
@@ -196,7 +196,7 @@ class MaterialApp {
         const selectedCheckboxes = document.querySelectorAll('.row-checkbox:checked');
         if (selectedCheckboxes.length === 0) return;
 
-        const selectedIds = Array.from(selectedCheckboxes).map(cb => parseInt(cb.dataset.id));
+        const selectedIds = Array.from(selectedCheckboxes).map(cb => parseFloat(cb.dataset.id));
         const selectedMaterials = this.materials.filter(m => selectedIds.includes(m.id));
 
         if (selectedMaterials.length === 0) return;
@@ -221,16 +221,16 @@ class MaterialApp {
         groupKeys.forEach(workId => {
             const workMaterials = grouped[workId];
             const work = this.works.find(w => w.id == workId); // Loose equality for ID
-            const obraName = work ? work.nome : 'Obra não identificada';
-            const obraEndereco = work ? work.endereco : '';
-            const obraPontoRef = work ? (work.ponto_referencia || '') : '';
-            
+            const obraName = work ? work.name : 'Obra não identificada';
+            const obraEndereco = work ? work.address : '';
+            const obraPontoRef = work ? (work.reference || '') : '';
+
             let materialList = workMaterials.map(m => `- ${m.qtd} ${m.unid} de ${m.desc}`).join('\n');
-            
+
             const fullEndereco = obraEndereco ? `\nLocal: ${obraEndereco}${obraPontoRef ? ` (Ref: ${obraPontoRef})` : ''}` : '';
 
             const text = encodeURIComponent(`Bom ${periodo}!\nEstamos precisando dos seguintes materiais na obra *${obraName}*:\n\n${materialList}${fullEndereco}\n\nPor favor, nos encaminhe a nota desse pedido o quanto antes para providenciarmos o pagamento da mesma.`);
-            
+
             window.open(`https://wa.me/?text=${text}`, '_blank');
         });
 
@@ -240,7 +240,7 @@ class MaterialApp {
             if (index !== -1) {
                 this.materials[index].status = 'Pedido aguardando entrega';
                 this.materials[index].data_processamento = new Date().toISOString().split('T')[0];
-                if (!this.materials[index].processador) this.materials[index].processador = 'Sistemas'; 
+                if (!this.materials[index].processador) this.materials[index].processador = 'Sistemas';
             }
         });
 
@@ -268,7 +268,7 @@ class MaterialApp {
         form.onsubmit = (e) => {
             e.preventDefault();
             const id = document.getElementById('edit-id').value;
-            
+
             // If we are in "Solicitar" mode and there are items in the cart or fields are filled, process them
             if (this.mode === 'solicitar' && !id) {
                 // If fields are filled, try to add the current item to the cart first
@@ -296,14 +296,14 @@ class MaterialApp {
             // Regular single-item save logic (for editing or single requests)
             const unidSelect = document.getElementById('unid').value;
             const customUnid = document.getElementById('custom-unid') ? document.getElementById('custom-unid').value : '';
-            
+
             const data = {
-                id: id ? parseInt(id) : Date.now(),
+                id: id ? parseFloat(id) : Date.now(),
                 desc: document.getElementById('desc').value,
                 qtd: document.getElementById('qtd').value,
                 unid: unidSelect === 'custom' ? customUnid : unidSelect,
                 solicitante: document.getElementById('solicitante').value,
-                status: (this.mode === 'processar' || (id && this.materials.find(m => m.id === parseInt(id)).status !== 'Pedido solicitado')) ? 'Pedido aguardando entrega' : 'Pedido solicitado',
+                status: (this.mode === 'historico' && id) ? (document.getElementById('status-editor').value || 'Pedido aguardando entrega') : ((this.mode === 'processar' || (id && this.materials.find(m => m.id === parseFloat(id)).status !== 'Pedido solicitado')) ? 'Pedido aguardando entrega' : 'Pedido solicitado'),
                 data_pedido: document.getElementById('data_pedido').value,
                 valor: document.getElementById('valor').value || 0,
                 data_entrega: document.getElementById('data_entrega').value || '',
@@ -315,7 +315,7 @@ class MaterialApp {
             };
 
             if (id) {
-                const index = this.materials.findIndex(m => m.id === parseInt(id));
+                const index = this.materials.findIndex(m => m.id === parseFloat(id));
                 this.materials[index] = data;
             } else {
                 if (!data.desc || !data.qtd) {
@@ -361,7 +361,7 @@ class MaterialApp {
         };
 
         this.materialCart.push(item);
-        
+
         // Clear all item fields
         document.getElementById('desc').value = '';
         document.getElementById('qtd').value = '';
@@ -545,7 +545,7 @@ class MaterialApp {
         const chips = Array.from(document.querySelectorAll('.material-chip'));
         const chip = chips.find(c => c.innerText === material);
         if (chip) chip.classList.add('selected');
-        
+
         document.getElementById('desc').value = material;
         document.getElementById('custom-material-group').style.display = 'none';
     }
@@ -570,44 +570,66 @@ class MaterialApp {
             this.works.forEach(work => {
                 const option = document.createElement('option');
                 option.value = work.id;
-                option.textContent = work.nome; // Use .nome
+                option.textContent = work.name;
                 workSelect.appendChild(option);
             });
         }
 
         document.getElementById('material-modal').style.display = 'flex';
-        
+
         const isProcessar = this.mode === 'processar';
+        const isHistorico = this.mode === 'historico';
         const modalTitle = document.getElementById('modal-title');
         const solicitarGrp = document.getElementById('solicitar-group');
         const processarGrp = document.getElementById('processar-group');
         const requestSum = document.getElementById('request-summary');
         const submitBtnText = document.getElementById('btn-submit-text');
+        const itemArea = document.getElementById('solicitar-item-area');
+        const cartBtn = document.getElementById('btn-add-to-cart');
 
-        if (isProcessar) {
+        // Defaults for all modes
+        if (solicitarGrp) solicitarGrp.style.display = 'block';
+        if (processarGrp) processarGrp.style.display = 'block';
+        if (requestSum) requestSum.style.display = 'none';
+        if (itemArea) itemArea.style.display = 'block';
+        if (cartBtn) cartBtn.style.display = 'none';
+        if (document.getElementById('status-group-editor')) document.getElementById('status-group-editor').style.display = 'none';
+
+        if (isProcessar && !isHistorico) {
             if (modalTitle) modalTitle.innerText = 'Processar Pedido';
             if (solicitarGrp) solicitarGrp.style.display = 'none';
-            if (processarGrp) processarGrp.style.display = 'block';
+            if (itemArea) itemArea.style.display = 'none';
             if (requestSum) requestSum.style.display = 'block';
             if (submitBtnText) submitBtnText.innerText = 'Salvar Alterações';
-            
+
             document.getElementById('work-select').required = false;
             document.getElementById('data_pedido').required = false;
+            document.getElementById('solicitante').required = false;
             document.getElementById('processador').required = true;
             document.getElementById('data_processamento').required = true;
-        } else {
-            if (modalTitle) modalTitle.innerText = data ? 'Alterar Pedido' : 'Novo Pedido';
-            if (solicitarGrp) solicitarGrp.style.display = 'block';
-            if (processarGrp) processarGrp.style.display = 'none';
-            if (requestSum) requestSum.style.display = 'none';
-            if (submitBtnText) submitBtnText.innerText = data ? 'Salvar Alterações' : 'Finalizar Solicitação';
-            
+        } else if (isHistorico && data) {
+            if (modalTitle) modalTitle.innerText = 'Alterar Pedido Histórico';
+            if (submitBtnText) submitBtnText.innerText = 'Salvar Alterações';
+
             document.getElementById('work-select').required = true;
             document.getElementById('data_pedido').required = true;
+            document.getElementById('solicitante').required = true;
+            document.getElementById('processador').required = false;
+            document.getElementById('data_processamento').required = false;
+            if (document.getElementById('status-group-editor')) document.getElementById('status-group-editor').style.display = 'block';
+        } else {
+            if (modalTitle) modalTitle.innerText = data ? 'Alterar Pedido' : 'Novo Pedido';
+            if (processarGrp) processarGrp.style.display = 'none';
+            if (submitBtnText) submitBtnText.innerText = data ? 'Salvar Alterações' : 'Finalizar Solicitação';
+            if (cartBtn && !data) cartBtn.style.display = 'inline-flex';
+
+            document.getElementById('work-select').required = true;
+            document.getElementById('data_pedido').required = true;
+            document.getElementById('solicitante').required = true;
             document.getElementById('processador').required = false;
             document.getElementById('data_processamento').required = false;
         }
-        
+
         // Reset Cart logic
         this.materialCart = [];
         this.renderCart();
@@ -615,14 +637,16 @@ class MaterialApp {
         document.getElementById('custom-material-group').style.display = 'none';
         document.querySelectorAll('.material-chip').forEach(c => c.classList.remove('selected'));
 
-        const itemArea = document.getElementById('solicitar-item-area');
-        if (itemArea) itemArea.style.display = (this.mode === 'solicitar' && !data) ? 'block' : 'none';
-
         if (data) {
             document.getElementById('edit-id').value = data.id;
             document.getElementById('desc').value = data.desc || '';
             document.getElementById('qtd').value = data.qtd || '';
-            
+
+            // Show custom input field if editing existing text that doesn't trigger chips
+            if (data.desc) {
+                document.getElementById('custom-material-group').style.display = 'block';
+            }
+
             // Populate Summary (for processor mode)
             const sumDesc = document.getElementById('sum-desc');
             const sumQtd = document.getElementById('sum-qtd');
@@ -652,12 +676,13 @@ class MaterialApp {
                     document.getElementById('custom-unid-group').style.display = 'none';
                 }
             }
-            
+
             document.getElementById('work-select').value = data.obra_id || '';
             document.getElementById('solicitante').value = data.solicitante || '';
             document.getElementById('data_pedido').value = data.data_pedido || '';
-            
+
             document.getElementById('valor').value = data.valor || '';
+            if (document.getElementById('status-editor')) document.getElementById('status-editor').value = data.status || 'Pedido aguardando entrega';
             document.getElementById('data_entrega').value = data.data_entrega || '';
             document.getElementById('nota').value = data.nota || '';
             document.getElementById('processador').value = data.processador || '';
@@ -727,13 +752,13 @@ class MaterialApp {
         const grid = document.getElementById('photo-upload-grid');
         grid.innerHTML = '';
         this.currentReportPhotos = new Array(parseInt(count)).fill(null);
-        
+
         for (let i = 0; i < count; i++) {
             const slot = document.createElement('div');
             slot.className = 'photo-slot';
             slot.onclick = () => this.triggerPhotoUpload(i);
             slot.id = `photo-slot-${i}`;
-            
+
             slot.innerHTML = `
                 <div class="slot-placeholder">
                     <i data-lucide="camera"></i>
@@ -764,13 +789,13 @@ class MaterialApp {
             const imageData = e.target.result;
             try {
                 const standardizedData = await this.standardizeImage(imageData);
-                
+
                 // CRITICAL FIX: Direct update and specific slot re-render
                 this.currentReportPhotos[index] = {
                     src: standardizedData,
                     title: this.getAISuggestion(index)
                 };
-                
+
                 this.renderPhotoSlot(index);
                 this.updateReportActions();
             } catch (err) {
@@ -793,10 +818,10 @@ class MaterialApp {
                 const targetHeight = 450; // 16:9
                 canvas.width = targetWidth;
                 canvas.height = targetHeight;
-                
+
                 const imgAspectRatio = img.width / img.height;
                 const targetAspectRatio = targetWidth / targetHeight;
-                
+
                 let renderWidth, renderHeight, offsetX, offsetY;
                 if (imgAspectRatio > targetAspectRatio) {
                     renderHeight = targetHeight;
@@ -809,7 +834,7 @@ class MaterialApp {
                     offsetX = 0;
                     offsetY = (targetHeight - renderHeight) / 2;
                 }
-                
+
                 ctx.fillStyle = '#FFFFFF';
                 ctx.fillRect(0, 0, targetWidth, targetHeight);
                 ctx.drawImage(img, offsetX, offsetY, renderWidth, renderHeight);
@@ -860,9 +885,9 @@ class MaterialApp {
     previewReport() {
         const modal = document.getElementById('report-preview-modal');
         const content = document.getElementById('report-preview-content');
-        
+
         const count = this.currentReportPhotos.length;
-        
+
         let html = `
             <div style="text-align: center; border-bottom: 2px solid #005844; padding-bottom: 10px; margin-bottom: 10px;">
                 <img src="logo.jpg" style="max-height: 40px;">
@@ -914,22 +939,22 @@ class MaterialApp {
             };
 
             const logoStr = await getLogoBase64();
-            
+
             const renderPage = (photosSlice, isNewPage = false) => {
                 if (isNewPage) doc.addPage();
-                
+
                 if (logoStr) doc.addImage(logoStr, 'JPEG', margin, margin, 35, 12);
                 doc.setFontSize(14);
                 doc.setTextColor(0, 88, 68);
-                doc.text('RELATÓRIO FOTOGRÁFICO', pageWidth/2, margin + 8, { align: 'center' });
+                doc.text('RELATÓRIO FOTOGRÁFICO', pageWidth / 2, margin + 8, { align: 'center' });
                 doc.setDrawColor(0, 88, 68);
                 doc.line(margin, margin + 15, pageWidth - margin, margin + 15);
-                
+
                 const photoCount = photosSlice.length;
                 const photoWidth = (availableWidth - 10) / 2;
                 const photoHeight = (photoWidth * 9) / 16;
                 const rowGap = 15;
-                
+
                 // Top Centered Layout (Starting below header)
                 let startY = 40;
 
@@ -938,7 +963,7 @@ class MaterialApp {
                     const row = Math.floor(i / 2);
                     const x = margin + (col * (photoWidth + 10));
                     const y = startY + (row * (photoHeight + rowGap));
-                    
+
                     if (photo && photo.src) {
                         try {
                             doc.addImage(photo.src, 'JPEG', x, y, photoWidth, photoHeight);
@@ -979,7 +1004,7 @@ class MaterialApp {
     renderReportHistory() {
         const list = document.getElementById('report-list');
         list.innerHTML = '';
-        
+
         if (this.reports.length === 0) {
             list.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted);">Nenhum relatório encontrado.</p>';
             return;
@@ -990,7 +1015,7 @@ class MaterialApp {
             card.className = 'report-item-card';
             card.innerHTML = `
                 <h4>${report.title}</h4>
-                <div class="date">${new Date(report.date).toLocaleDateString('pt-BR')} ${new Date(report.date).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}</div>
+                <div class="date">${new Date(report.date).toLocaleDateString('pt-BR')} ${new Date(report.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
                 <div style="display: flex; gap: 0.5rem; margin-top: auto;">
                     <button class="action-btn" onclick="app.reprintReport(${report.id})">
                         <i data-lucide="printer"></i> Reimprimir
