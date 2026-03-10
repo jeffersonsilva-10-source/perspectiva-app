@@ -7,6 +7,7 @@ class MaterialApp {
         this.works = JSON.parse(localStorage.getItem('obra_works')) || [];
         this.currentReportPhotos = [];
         this.workSearchQuery = '';
+        this.materialSearchQuery = '';
         this.mode = 'solicitar';
         this.init();
     }
@@ -42,6 +43,20 @@ class MaterialApp {
             btnAdd.style.display = mode === 'solicitar' ? 'flex' : 'none';
         }
 
+        // Show/Hide search in history mode
+        const searchContainer = document.getElementById('history-search-container');
+        if (searchContainer) {
+            searchContainer.style.display = mode === 'historico' ? 'block' : 'none';
+        }
+        this.materialSearchQuery = '';
+        const searchInput = document.getElementById('material-history-search');
+        if (searchInput) searchInput.value = '';
+
+        // Reset Selection on mode switch
+        const selectAll = document.getElementById('select-all-materials');
+        if (selectAll) selectAll.checked = false;
+        this.updateSelectionUI();
+
         this.renderTable();
         this.switchView('material-view');
     }
@@ -56,15 +71,31 @@ class MaterialApp {
             filtered = this.materials.filter(m => m.status === 'Pedido solicitado');
         } else if (this.mode === 'historico') {
             filtered = this.materials.filter(m => m.status !== 'Pedido solicitado');
+            
+            if (this.materialSearchQuery) {
+                const query = this.materialSearchQuery.toLowerCase();
+                filtered = filtered.filter(m => 
+                    (m.desc && m.desc.toLowerCase().includes(query)) || 
+                    (m.obra_name && m.obra_name.toLowerCase().includes(query))
+                );
+            }
         }
 
         filtered.forEach(item => {
             const tr = document.createElement('tr');
+            const isSolicitado = item.status === 'Pedido solicitado';
             tr.innerHTML = `
+                <td class="select-col" data-label="Selecionar">
+                    <input type="checkbox" class="row-checkbox select-checkbox" 
+                           data-id="${item.id}" 
+                           onchange="app.updateSelectionUI()"
+                           ${!isSolicitado || this.mode !== 'processar' ? 'disabled' : ''}>
+                </td>
                 <td data-label="Data">${this.formatDate(item.data_pedido)}</td>
                 <td data-label="Descrição">${item.desc}</td>
                 <td data-label="Qtd">${item.qtd}</td>
                 <td data-label="Unidade">${item.unid || '-'}</td>
+                <td data-label="Obra">${item.obra_name || '-'}</td>
                 <td data-label="Solicitante">${item.solicitante || '-'}</td>
                 <td data-label="Valor" class="processor-info">R$ ${Number(item.valor || 0).toFixed(2)}</td>
                 <td data-label="Status"><span class="status-badge status-${(item.status || 'solicitado').toLowerCase().replace(' ', '-')}">${item.status || 'Pedido solicitado'}</span></td>
@@ -108,6 +139,93 @@ class MaterialApp {
 
         localStorage.setItem('obra_materials', JSON.stringify(this.materials));
         lucide.createIcons();
+        this.updateSelectionUI();
+    }
+
+    toggleAllSelection(selected) {
+        const checkboxes = document.querySelectorAll('.row-checkbox');
+        checkboxes.forEach(cb => {
+            if (!cb.disabled) cb.checked = selected;
+        });
+        this.updateSelectionUI();
+    }
+
+    updateSelectionUI() {
+        const selectedCheckboxes = document.querySelectorAll('.row-checkbox:checked');
+        const count = selectedCheckboxes.length;
+        const bar = document.getElementById('bulk-action-bar');
+        const countEl = document.getElementById('selected-count');
+        
+        if (countEl) countEl.innerText = count;
+        if (bar) {
+            if (count > 0 && this.mode === 'processar') {
+                bar.classList.add('active');
+            } else {
+                bar.classList.remove('active');
+            }
+        }
+    }
+
+    async processSelectedAndWhatsApp() {
+        const selectedCheckboxes = document.querySelectorAll('.row-checkbox:checked');
+        if (selectedCheckboxes.length === 0) return;
+
+        const selectedIds = Array.from(selectedCheckboxes).map(cb => parseInt(cb.dataset.id));
+        const selectedMaterials = this.materials.filter(m => selectedIds.includes(m.id));
+
+        if (selectedMaterials.length === 0) return;
+
+        // Automatically determine greeting
+        const hour = new Date().getHours();
+        let greeting = "Bom dia";
+        if (hour >= 12 && hour < 18) greeting = "Boa tarde";
+        else if (hour >= 18 || hour < 5) greeting = "Boa noite";
+
+        // Group by Work
+        const groupedByWork = {};
+        selectedMaterials.forEach(m => {
+            const workName = m.obra_name || "Obra Geral";
+            if (!groupedByWork[workName]) groupedByWork[workName] = [];
+            groupedByWork[workName].push(m);
+        });
+
+        let fullMessage = "";
+        const workNames = Object.keys(groupedByWork);
+
+        workNames.forEach((workName, index) => {
+            const items = groupedByWork[workName];
+            const itemsText = items.map(m => `• ${m.qtd}${m.unid || ''} de ${m.desc}`).join('\n');
+            
+            fullMessage += `${greeting} estamos precisando dos seguintes materiais na ${workName}:\n${itemsText}\n\nPor favor, nos encaminhe a nota desse pedido o quanto antes para providenciarmos o pagamento da mesma.`;
+            
+            if (index < workNames.length - 1) fullMessage += "\n\n---\n\n";
+        });
+
+        // Update status of all selected
+        selectedIds.forEach(id => {
+            const index = this.materials.findIndex(m => m.id === id);
+            if (index !== -1) {
+                this.materials[index].status = 'Pedido aguardando entrega';
+                this.materials[index].data_processamento = new Date().toISOString().split('T')[0];
+                // Try to find a processor name from previous orders or current user if available
+                if (!this.materials[index].processador) this.materials[index].processador = 'Sistemas'; 
+            }
+        });
+
+        this.renderTable();
+
+        // Send to WhatsApp
+        const encodedMsg = encodeURIComponent(fullMessage);
+        window.open(`https://wa.me/?text=${encodedMsg}`, '_blank');
+        
+        // Reset check all
+        const selectAll = document.getElementById('select-all-materials');
+        if (selectAll) selectAll.checked = false;
+    }
+
+    handleMaterialSearch(query) {
+        this.materialSearchQuery = query;
+        this.renderTable();
     }
 
 
@@ -131,13 +249,15 @@ class MaterialApp {
                 qtd: document.getElementById('qtd').value,
                 unid: unidSelect === 'custom' ? customUnid : unidSelect,
                 solicitante: document.getElementById('solicitante').value,
-                status: this.mode === 'processar' ? document.getElementById('status').value : 'Pedido solicitado',
+                status: (this.mode === 'processar' || (id && this.materials.find(m => m.id === parseInt(id)).status !== 'Pedido solicitado')) ? 'Pedido aguardando entrega' : 'Pedido solicitado',
                 data_pedido: document.getElementById('data_pedido').value,
                 valor: document.getElementById('valor').value || 0,
                 data_entrega: document.getElementById('data_entrega').value || '',
                 nota: document.getElementById('nota').value || '',
                 processador: document.getElementById('processador').value || '',
-                data_processamento: document.getElementById('data_processamento').value || ''
+                data_processamento: document.getElementById('data_processamento').value || '',
+                obra_id: document.getElementById('work-select').value,
+                obra_name: document.getElementById('work-select').options[document.getElementById('work-select').selectedIndex].text
             };
 
             if (id) {
@@ -162,6 +282,7 @@ class MaterialApp {
                 id: id ? parseInt(id) : Date.now(),
                 name: document.getElementById('work-name').value,
                 address: document.getElementById('work-address').value,
+                reference: document.getElementById('work-reference').value,
                 owner: document.getElementById('work-owner').value,
                 phone: document.getElementById('work-phone').value,
                 date_created: id ? this.works.find(w => w.id === parseInt(id)).date_created : new Date().toISOString()
@@ -226,6 +347,7 @@ class MaterialApp {
                 <td data-label="Data">${this.formatDate(work.date_created.split('T')[0])}</td>
                 <td data-label="Nome">${work.name}</td>
                 <td data-label="Endereço">${work.address}</td>
+                <td data-label="Referência">${work.reference || '-'}</td>
                 <td data-label="Proprietário">${work.owner}</td>
                 <td data-label="Telefone">${work.phone}</td>
                 <td data-label="Ações">
@@ -252,6 +374,7 @@ class MaterialApp {
             document.getElementById('work-id').value = work.id;
             document.getElementById('work-name').value = work.name;
             document.getElementById('work-address').value = work.address;
+            document.getElementById('work-reference').value = work.reference || '';
             document.getElementById('work-owner').value = work.owner;
             document.getElementById('work-phone').value = work.phone;
             this.switchView('works-create-view');
@@ -286,6 +409,23 @@ class MaterialApp {
     }
 
     openModal(data = null) {
+        if (!data && this.works.length === 0) {
+            alert('Você precisa cadastrar uma obra antes de fazer um pedido!');
+            this.switchView('works-create-view');
+            return;
+        }
+
+        const workSelect = document.getElementById('work-select');
+        if (workSelect) {
+            workSelect.innerHTML = '<option value="" disabled selected>Escolha a obra...</option>';
+            this.works.forEach(work => {
+                const option = document.createElement('option');
+                option.value = work.id;
+                option.textContent = work.name;
+                workSelect.appendChild(option);
+            });
+        }
+
         document.getElementById('material-modal').style.display = 'flex';
         document.getElementById('modal-title').innerText = data ? 'Alterar Pedido' : 'Novo Pedido';
         
@@ -318,6 +458,7 @@ class MaterialApp {
                 document.getElementById('custom-unid-group').style.display = 'none';
             }
             
+            document.getElementById('work-select').value = data.obra_id || '';
             document.getElementById('solicitante').value = data.solicitante || '';
             document.getElementById('data_pedido').value = data.data_pedido;
             
@@ -337,11 +478,13 @@ class MaterialApp {
             const customUnid = document.getElementById('custom-unid');
             if (customUnid) customUnid.required = isSolicitar && document.getElementById('unid').value === 'custom';
 
+            // Automatic status management for processing
             let currentStatus = data.status || 'Pedido solicitado';
-            if (isProcessar && currentStatus === 'Pedido solicitado') {
+            if (this.mode === 'processar' && currentStatus === 'Pedido solicitado') {
                 currentStatus = 'Pedido aguardando entrega';
             }
-            document.getElementById('status').value = currentStatus;
+            // No longer setting document.getElementById('status').value since it's removed
+            
             document.getElementById('valor').value = data.valor || '';
             document.getElementById('data_entrega').value = data.data_entrega || '';
             document.getElementById('nota').value = data.nota || '';
@@ -362,7 +505,6 @@ class MaterialApp {
             document.getElementById('data_pedido').value = new Date().toISOString().split('T')[0];
             document.getElementById('data_processamento').value = new Date().toISOString().split('T')[0];
             document.getElementById('custom-unid-group').style.display = 'none';
-            document.getElementById('status').value = 'Pedido solicitado';
         }
     }
 

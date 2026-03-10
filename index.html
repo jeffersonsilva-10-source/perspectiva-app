@@ -162,6 +162,11 @@
                     </div>
 
                     <div class="form-group">
+                        <label>Ponto de referência (Opcional)</label>
+                        <input type="text" id="work-reference" placeholder="Perto de..., Próximo a...">
+                    </div>
+
+                    <div class="form-group">
                         <label>Nome do proprietário</label>
                         <input type="text" id="work-owner" placeholder="Nome completo" required>
                     </div>
@@ -207,6 +212,7 @@
                             <th>Data</th>
                             <th>Nome da Obra</th>
                             <th>Endereço</th>
+                            <th>Ponto de Ref.</th>
                             <th>Proprietário</th>
                             <th>Telefone</th>
                             <th>Ações</th>
@@ -251,15 +257,23 @@
                 <i data-lucide="plus"></i> Novo Pedido
             </button>
 
+            <div id="history-search-container" class="search-container" style="display: none; margin-top: 1.5rem; margin-bottom: 1rem;">
+                <div class="form-group">
+                    <input type="text" id="material-history-search" placeholder="Buscar por material ou obra..." oninput="app.handleMaterialSearch(this.value)">
+                </div>
+            </div>
+
 
             <div class="table-wrapper">
                 <table id="materials-table">
                     <thead>
                         <tr>
+                            <th class="select-col"><input type="checkbox" id="select-all-materials" class="select-checkbox" onclick="app.toggleAllSelection(this.checked)"></th>
                             <th>Data</th>
                             <th>Descrição</th>
                             <th>Qtd</th>
                             <th>Unid</th>
+                            <th>Obra</th>
                             <th>Solicitante</th>
                             <th class="processor-info">Valor</th>
                             <th>Status</th>
@@ -273,6 +287,16 @@
                         <!-- Content will be injected by JS -->
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Bulk Action Bar -->
+            <div id="bulk-action-bar" class="bulk-action-bar">
+                <div class="bulk-info">
+                    <span id="selected-count">0</span> itens selecionados
+                </div>
+                <button class="whatsapp-btn" onclick="app.processSelectedAndWhatsApp()">
+                    <i data-lucide="message-circle"></i> Processar e Enviar WhatsApp
+                </button>
             </div>
         </section>
 
@@ -403,6 +427,13 @@
 
                 <div class="solicitar-info">
                     <div class="form-group">
+                        <label>Obra Destino</label>
+                        <select id="work-select" required>
+                            <option value="" disabled selected>Escolha a obra...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
                         <label>Data do Pedido</label>
                         <input type="date" id="data_pedido" required>
                     </div>
@@ -476,15 +507,6 @@
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                        <div class="form-group">
-                            <label>Status do Pedido</label>
-                            <select id="status">
-                                <option value="Pedido solicitado">Pedido solicitado</option>
-                                <option value="Pedido aguardando entrega">Pedido aguardando entrega</option>
-                                <option value="Pendente">Pendente</option>
-                                <option value="Entregue">Entregue</option>
-                            </select>
-                        </div>
                         <div class="form-group">
                             <label>Valor Unitário (R$)</label>
                             <input type="number" step="0.01" id="valor">
