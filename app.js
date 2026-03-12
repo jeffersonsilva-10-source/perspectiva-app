@@ -251,6 +251,58 @@ class MaterialApp {
         if (selectAll) selectAll.checked = false;
     }
 
+    async processSingleAndWhatsApp() {
+        const id = document.getElementById('edit-id').value;
+        if (!id) return;
+
+        const unidSelect = document.getElementById('unid').value;
+        const customUnid = document.getElementById('custom-unid') ? document.getElementById('custom-unid').value : '';
+        const workId = document.getElementById('work-select').value;
+        const workSelect = document.getElementById('work-select');
+        const obraName = workSelect.selectedIndex >= 0 ? workSelect.options[workSelect.selectedIndex].text : '';
+
+        const data = {
+            id: parseFloat(id),
+            desc: document.getElementById('desc').value,
+            qtd: document.getElementById('qtd').value,
+            unid: unidSelect === 'custom' ? customUnid : unidSelect,
+            solicitante: document.getElementById('solicitante').value,
+            status: 'Pedido aguardando entrega',
+            data_pedido: document.getElementById('data_pedido').value,
+            valor: document.getElementById('valor').value || 0,
+            data_entrega: document.getElementById('data_entrega').value || '',
+            nota: document.getElementById('nota').value || '',
+            processador: document.getElementById('processador').value || '',
+            data_processamento: document.getElementById('data_processamento').value || '',
+            obra_id: workId,
+            obra_name: obraName
+        };
+
+        const index = this.materials.findIndex(m => m.id === parseFloat(id));
+        if (index !== -1) {
+            this.materials[index] = data;
+        }
+
+        this.renderTable();
+        this.closeModal();
+
+        const work = this.works.find(w => w.id == workId); // Loose equality
+        const obraEndereco = work ? work.address : '';
+        const obraPontoRef = work ? (work.reference || '') : '';
+
+        const hour = new Date().getHours();
+        let periodo = "dia";
+        if (hour >= 12 && hour < 18) periodo = "tarde";
+        else if (hour >= 18 || hour < 5) periodo = "noite";
+
+        const materialList = `- ${data.qtd} ${data.unid} de ${data.desc}`;
+        const fullEndereco = obraEndereco ? `\nLocal: ${obraEndereco}${obraPontoRef ? ` (Ref: ${obraPontoRef})` : ''}` : '';
+
+        const text = encodeURIComponent(`Bom ${periodo}!\nEstamos precisando do seguinte material na obra *${obraName}*:\n\n${materialList}${fullEndereco}\n\nPor favor, nos encaminhe a nota desse pedido o quanto antes para providenciarmos o pagamento da mesma.`);
+
+        window.open(`https://wa.me/?text=${text}`, '_blank');
+    }
+
     handleMaterialSearch(query) {
         this.materialSearchQuery = query;
         this.renderTable();
@@ -588,34 +640,53 @@ class MaterialApp {
         const cartBtn = document.getElementById('btn-add-to-cart');
 
         // Defaults for all modes
+        document.body.classList.remove('mode-solicitar', 'mode-processar', 'mode-historico');
+        document.body.classList.add(`mode-${this.mode}`);
+
         if (solicitarGrp) solicitarGrp.style.display = 'block';
         if (processarGrp) processarGrp.style.display = 'block';
         if (requestSum) requestSum.style.display = 'none';
         if (itemArea) itemArea.style.display = 'block';
         if (cartBtn) cartBtn.style.display = 'none';
-        if (document.getElementById('status-group-editor')) document.getElementById('status-group-editor').style.display = 'none';
+
+        const statusGroupEditor = document.getElementById('status-group-editor');
+        if (statusGroupEditor) statusGroupEditor.style.display = 'none';
+
+        const whatsappBtn = document.getElementById('btn-save-request-whatsapp');
+        if (whatsappBtn) whatsappBtn.style.display = 'none';
 
         if (isProcessar && !isHistorico) {
             if (modalTitle) modalTitle.innerText = 'Processar Pedido';
             if (solicitarGrp) solicitarGrp.style.display = 'none';
             if (itemArea) itemArea.style.display = 'none';
             if (requestSum) requestSum.style.display = 'block';
-            if (submitBtnText) submitBtnText.innerText = 'Salvar Alterações';
+            if (submitBtnText) submitBtnText.innerText = 'Apenas Processar';
+            if (whatsappBtn) whatsappBtn.style.display = 'inline-flex';
 
-            document.getElementById('work-select').required = false;
-            document.getElementById('data_pedido').required = false;
-            document.getElementById('solicitante').required = false;
-            document.getElementById('processador').required = true;
-            document.getElementById('data_processamento').required = true;
+            const workSelectEl = document.getElementById('work-select');
+            if (workSelectEl) workSelectEl.required = false;
+            const dataPedidoEl = document.getElementById('data_pedido');
+            if (dataPedidoEl) dataPedidoEl.required = false;
+            const solicitanteEl = document.getElementById('solicitante');
+            if (solicitanteEl) solicitanteEl.required = false;
+            const processadorEl = document.getElementById('processador');
+            if (processadorEl) processadorEl.required = true;
+            const dataProcessamentoEl = document.getElementById('data_processamento');
+            if (dataProcessamentoEl) dataProcessamentoEl.required = true;
         } else if (isHistorico && data) {
             if (modalTitle) modalTitle.innerText = 'Alterar Pedido Histórico';
             if (submitBtnText) submitBtnText.innerText = 'Salvar Alterações';
 
-            document.getElementById('work-select').required = true;
-            document.getElementById('data_pedido').required = true;
-            document.getElementById('solicitante').required = true;
-            document.getElementById('processador').required = false;
-            document.getElementById('data_processamento').required = false;
+            const workSelectEl = document.getElementById('work-select');
+            if (workSelectEl) workSelectEl.required = true;
+            const dataPedidoEl = document.getElementById('data_pedido');
+            if (dataPedidoEl) dataPedidoEl.required = true;
+            const solicitanteEl = document.getElementById('solicitante');
+            if (solicitanteEl) solicitanteEl.required = true;
+            const processadorEl = document.getElementById('processador');
+            if (processadorEl) processadorEl.required = false;
+            const dataProcessamentoEl = document.getElementById('data_processamento');
+            if (dataProcessamentoEl) dataProcessamentoEl.required = false;
             if (document.getElementById('status-group-editor')) document.getElementById('status-group-editor').style.display = 'block';
         } else {
             if (modalTitle) modalTitle.innerText = data ? 'Alterar Pedido' : 'Novo Pedido';
@@ -623,11 +694,16 @@ class MaterialApp {
             if (submitBtnText) submitBtnText.innerText = data ? 'Salvar Alterações' : 'Finalizar Solicitação';
             if (cartBtn && !data) cartBtn.style.display = 'inline-flex';
 
-            document.getElementById('work-select').required = true;
-            document.getElementById('data_pedido').required = true;
-            document.getElementById('solicitante').required = true;
-            document.getElementById('processador').required = false;
-            document.getElementById('data_processamento').required = false;
+            const workSelectEl = document.getElementById('work-select');
+            if (workSelectEl) workSelectEl.required = true;
+            const dataPedidoEl = document.getElementById('data_pedido');
+            if (dataPedidoEl) dataPedidoEl.required = true;
+            const solicitanteEl = document.getElementById('solicitante');
+            if (solicitanteEl) solicitanteEl.required = true;
+            const processadorEl = document.getElementById('processador');
+            if (processadorEl) processadorEl.required = false;
+            const dataProcessamentoEl = document.getElementById('data_processamento');
+            if (dataProcessamentoEl) dataProcessamentoEl.required = false;
         }
 
         // Reset Cart logic
@@ -638,9 +714,12 @@ class MaterialApp {
         document.querySelectorAll('.material-chip').forEach(c => c.classList.remove('selected'));
 
         if (data) {
-            document.getElementById('edit-id').value = data.id;
-            document.getElementById('desc').value = data.desc || '';
-            document.getElementById('qtd').value = data.qtd || '';
+            const editIdEl = document.getElementById('edit-id');
+            if (editIdEl) editIdEl.value = data.id;
+            const descEl = document.getElementById('desc');
+            if (descEl) descEl.value = data.desc || '';
+            const qtdEl = document.getElementById('qtd');
+            if (qtdEl) qtdEl.value = data.qtd || '';
 
             // Show custom input field if editing existing text that doesn't trigger chips
             if (data.desc) {
@@ -677,22 +756,36 @@ class MaterialApp {
                 }
             }
 
-            document.getElementById('work-select').value = data.obra_id || '';
-            document.getElementById('solicitante').value = data.solicitante || '';
-            document.getElementById('data_pedido').value = data.data_pedido || '';
+            const workSelectEl = document.getElementById('work-select');
+            if (workSelectEl) workSelectEl.value = data.obra_id || '';
+            const solicitanteEl = document.getElementById('solicitante');
+            if (solicitanteEl) solicitanteEl.value = data.solicitante || '';
+            const dataPedidoEl = document.getElementById('data_pedido');
+            if (dataPedidoEl) dataPedidoEl.value = data.data_pedido || '';
 
-            document.getElementById('valor').value = data.valor || '';
-            if (document.getElementById('status-editor')) document.getElementById('status-editor').value = data.status || 'Pedido aguardando entrega';
-            document.getElementById('data_entrega').value = data.data_entrega || '';
-            document.getElementById('nota').value = data.nota || '';
-            document.getElementById('processador').value = data.processador || '';
-            document.getElementById('data_processamento').value = data.data_processamento || new Date().toISOString().split('T')[0];
+            const valorEl = document.getElementById('valor');
+            if (valorEl) valorEl.value = data.valor || '';
+            const statusEditorEl = document.getElementById('status-editor');
+            if (statusEditorEl) statusEditorEl.value = data.status || 'Pedido aguardando entrega';
+            const dataEntregaEl = document.getElementById('data_entrega');
+            if (dataEntregaEl) dataEntregaEl.value = data.data_entrega || '';
+            const notaEl = document.getElementById('nota');
+            if (notaEl) notaEl.value = data.nota || '';
+            const processadorEl = document.getElementById('processador');
+            if (processadorEl) processadorEl.value = data.processador || '';
+            const dataProcessamentoEl = document.getElementById('data_processamento');
+            if (dataProcessamentoEl) dataProcessamentoEl.value = data.data_processamento || new Date().toISOString().split('T')[0];
         } else {
-            document.getElementById('material-form').reset();
-            document.getElementById('edit-id').value = '';
-            document.getElementById('data_pedido').value = new Date().toISOString().split('T')[0];
-            document.getElementById('data_processamento').value = new Date().toISOString().split('T')[0];
-            document.getElementById('custom-unid-group').style.display = 'none';
+            const matForm = document.getElementById('material-form');
+            if (matForm) matForm.reset();
+            const editIdEl = document.getElementById('edit-id');
+            if (editIdEl) editIdEl.value = '';
+            const dataPedidoEl = document.getElementById('data_pedido');
+            if (dataPedidoEl) dataPedidoEl.value = new Date().toISOString().split('T')[0];
+            const dataProcessamentoEl = document.getElementById('data_processamento');
+            if (dataProcessamentoEl) dataProcessamentoEl.value = new Date().toISOString().split('T')[0];
+            const customUnidGrp = document.getElementById('custom-unid-group');
+            if (customUnidGrp) customUnidGrp.style.display = 'none';
         }
     }
 
