@@ -394,6 +394,24 @@
             </header>
 
             <div class="report-setup-container">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Obra</label>
+                        <select id="report-work-select" required>
+                            <option value="" disabled selected>Escolha a obra...</option>
+                            <!-- Dynamically populated -->
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Título Padrão das Fotos</label>
+                        <select id="report-photo-title" required onchange="app.updateAllPhotoTitles()">
+                            <option value="Registro da obra" selected>Registro da obra</option>
+                            <option value="Registro de chegada de material">Registro de chegada de material</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label>Quantidade de Fotos</label>
                     <select id="report-photo-count" onchange="app.setupPhotoUpload(this.value)">

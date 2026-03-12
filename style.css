@@ -1,11 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
 
 :root {
-    --primary: #005844; /* Forest Green from Logo */
+    --primary: #005844;
+    /* Forest Green from Logo */
     --primary-hover: #004333;
-    --accent: #059669; /* Emerald Green highlight */
+    --accent: #059669;
+    /* Emerald Green highlight */
     --accent-hover: #047857;
-    --bg-dark: #0a0f0d; /* Deep Charcoal Green */
+    --bg-dark: #0a0f0d;
+    /* Deep Charcoal Green */
     --bg-card: rgba(10, 15, 13, 0.7);
     --text-main: #f1f5f9;
     --text-muted: #94a3b8;
@@ -25,7 +28,7 @@
 
 body {
     background-color: var(--bg-dark);
-    background-image: 
+    background-image:
         radial-gradient(at 0% 0%, rgba(0, 88, 68, 0.15) 0px, transparent 50%),
         radial-gradient(at 100% 100%, rgba(5, 150, 105, 0.1) 0px, transparent 50%);
     color: var(--text-main);
@@ -34,7 +37,8 @@ body {
 }
 
 .container {
-    max-width: 1400px; /* Increase max width slightly */
+    max-width: 1400px;
+    /* Increase max width slightly */
     margin: 0 auto;
     padding: 1.5rem;
     position: relative;
@@ -83,7 +87,7 @@ header {
 .logo-container img {
     height: auto;
     object-fit: contain;
-    filter: drop-shadow(0 0 10px rgba(0,88,68,0.3));
+    filter: drop-shadow(0 0 10px rgba(0, 88, 68, 0.3));
 }
 
 h1 {
@@ -163,7 +167,8 @@ h1 {
 .card-icon {
     width: 64px;
     height: 64px;
-    background: rgba(5, 150, 105, 0.1); /* Emerald tint */
+    background: rgba(5, 150, 105, 0.1);
+    /* Emerald tint */
     color: var(--accent);
     border-radius: 16px;
     display: flex;
@@ -194,8 +199,15 @@ h1 {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .back-btn {
@@ -222,7 +234,8 @@ h1 {
     backdrop-filter: blur(12px);
     border-radius: 24px;
     border: 1px solid var(--glass-border);
-    overflow-x: auto; /* Enable horizontal scrolling */
+    overflow-x: auto;
+    /* Enable horizontal scrolling */
     box-shadow: var(--glass-shadow);
     margin-top: 1rem;
     width: 100%;
@@ -230,7 +243,8 @@ h1 {
 
 table {
     width: 100%;
-    min-width: 1100px; /* Force minimum width to trigger scroll on smaller screens */
+    min-width: 1100px;
+    /* Force minimum width to trigger scroll on smaller screens */
     border-collapse: collapse;
     text-align: left;
     table-layout: auto;
@@ -269,10 +283,27 @@ tr:hover td {
     font-weight: 500;
 }
 
-.status-solicitado, .status-pedido-solicitado { background: rgba(0, 88, 68, 0.2); color: #4ade80; }
-.status-aguardando-entrega, .status-pedido-aguardando-entrega { background: rgba(5, 150, 105, 0.2); color: #6ee7b7; }
-.status-pendente { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
-.status-entregue { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+.status-solicitado,
+.status-pedido-solicitado {
+    background: rgba(0, 88, 68, 0.2);
+    color: #4ade80;
+}
+
+.status-aguardando-entrega,
+.status-pedido-aguardando-entrega {
+    background: rgba(5, 150, 105, 0.2);
+    color: #6ee7b7;
+}
+
+.status-pendente {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+}
+
+.status-entregue {
+    background: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+}
 
 
 /* Buttons */
@@ -286,13 +317,15 @@ tr:hover td {
     border: 1px solid rgba(255, 255, 255, 0.1);
     color: var(--text-muted);
     cursor: pointer;
-    padding: 0.35rem 0.7rem; /* More compact */
+    padding: 0.35rem 0.7rem;
+    /* More compact */
     border-radius: 8px;
     transition: all 0.2s;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.8rem; /* Smaller font */
+    font-size: 0.8rem;
+    /* Smaller font */
     gap: 0.3rem;
 }
 
@@ -303,15 +336,18 @@ tr:hover td {
 
 @media (max-width: 600px) {
     .action-btn {
-        padding: 0.4rem 0.5rem; /* Extremely compact */
+        padding: 0.4rem 0.5rem;
+        /* Extremely compact */
         flex: 1;
         font-size: 0.7rem;
         min-width: 0;
     }
+
     .action-btn i {
         width: 12px !important;
         margin-right: 2px !important;
     }
+
     .action-btn span {
         white-space: nowrap;
         font-size: 0.7rem;
@@ -384,20 +420,26 @@ tr:hover td {
     font-size: 0.875rem;
 }
 
-.form-group input, .form-group select {
+.form-group input,
+.form-group select {
     width: 100%;
     background: rgba(0, 0, 0, 0.2);
     border: 1px solid var(--glass-border);
-    padding: 0.85rem 1rem; /* Slightly taller for touch */
+    padding: 0.85rem 1rem;
+    /* Slightly taller for touch */
     border-radius: 12px;
     color: white;
     outline: none;
-    font-size: 16px; /* Prevent iPhone auto-zoom */
+    font-size: 16px;
+    /* Prevent iPhone auto-zoom */
 }
 
 @media (max-width: 600px) {
-    .form-group input, .form-group select {
-        padding: 1rem; /* Even larger on mobile */
+
+    .form-group input,
+    .form-group select {
+        padding: 1rem;
+        /* Even larger on mobile */
     }
 }
 
@@ -460,22 +502,32 @@ tr:hover td {
 }
 
 @media (max-width: 768px) {
-    .container { padding: 0.75rem; }
-    header { margin-bottom: 2rem; }
-    h1 { font-size: 1.8rem; }
-    
+    .container {
+        padding: 0.75rem;
+    }
+
+    header {
+        margin-bottom: 2rem;
+    }
+
+    h1 {
+        font-size: 1.8rem;
+    }
+
     .dashboard-grid {
         grid-template-columns: 1fr;
         gap: 1rem;
     }
 
-    .card { padding: 1.5rem; }
-    
+    .card {
+        padding: 1.5rem;
+    }
+
     .summary-container {
         gap: 0.5rem;
         flex-wrap: wrap;
     }
-    
+
     .summary-item {
         padding: 0.75rem 1rem;
         flex: 1;
@@ -483,17 +535,18 @@ tr:hover td {
     }
 
     /* Table to Card Stack */
-    #materials-table, 
-    #materials-table thead, 
-    #materials-table tbody, 
-    #materials-table th, 
-    #materials-table td, 
+    #materials-table,
+    #materials-table thead,
+    #materials-table tbody,
+    #materials-table th,
+    #materials-table td,
     #materials-table tr {
         display: block;
     }
 
     #materials-table {
-        min-width: auto !important; /* Stop table from forcing width */
+        min-width: auto !important;
+        /* Stop table from forcing width */
     }
 
     .table-wrapper {
@@ -561,7 +614,8 @@ tr:hover td {
         width: 100%;
         justify-content: center;
         gap: 0.4rem;
-        flex-wrap: nowrap; /* Keep them together */
+        flex-wrap: nowrap;
+        /* Keep them together */
     }
 
     .btn-add {
@@ -573,9 +627,10 @@ tr:hover td {
         font-size: 1rem;
         position: relative;
         bottom: 0;
-        margin: 1.5rem auto 1.5rem auto; /* Added margin-top to prevent overlap */
+        margin: 1.5rem auto 1.5rem auto;
+        /* Added margin-top to prevent overlap */
         z-index: 100;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
     }
 }
 
@@ -612,14 +667,16 @@ tr:hover td {
     position: absolute;
     width: 30px;
     height: 30px;
-    border: 3px solid rgba(255,255,255,0.1);
+    border: 3px solid rgba(255, 255, 255, 0.1);
     border-top-color: var(--primary);
     border-radius: 50%;
     animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .photo-slot img {
@@ -634,6 +691,28 @@ tr:hover td {
     align-items: center;
     gap: 0.5rem;
     color: var(--text-muted);
+}
+
+.photo-caption-select {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 0.5rem;
+    background: rgba(0, 0, 0, 0.75);
+    border: none;
+    color: white;
+    font-size: 0.9rem;
+    cursor: pointer;
+    text-align: center;
+    text-align-last: center;
+    outline: none;
+    pointer-events: auto;
+    z-index: 10;
+}
+
+.photo-caption-select:hover {
+    background: rgba(0, 0, 0, 0.9);
 }
 
 .photo-caption-input {
@@ -655,7 +734,7 @@ tr:hover td {
     color: #333;
     padding: 15mm;
     border-radius: 2px;
-    box-shadow: 0 0 30px rgba(0,0,0,0.5);
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
     width: 210mm;
     min-height: 297mm;
     margin: 0 auto;
@@ -704,12 +783,14 @@ tr:hover td {
         width: 100%;
         max-width: 100%;
     }
+
     .a4-preview {
         width: 100% !important;
         min-height: auto;
         padding: 5mm;
         box-shadow: none;
     }
+
     .a4-photo-container {
         grid-template-columns: 1fr;
         gap: 5mm;
@@ -809,7 +890,8 @@ tr:hover td {
 .select-col {
     width: 40px;
     text-align: center;
-    display: none; /* Hidden by default */
+    display: none;
+    /* Hidden by default */
 }
 
 body.mode-processar .select-col {
@@ -886,6 +968,7 @@ body.mode-processar .select-col {
         gap: 0.8rem;
         text-align: center;
     }
+
     .bulk-info {
         font-size: 0.8rem;
     }

@@ -831,6 +831,17 @@ class MaterialApp {
 
     enterReportMode(mode) {
         if (mode === 'criar') {
+            const workSelect = document.getElementById('report-work-select');
+            if (workSelect) {
+                workSelect.innerHTML = '<option value="" disabled selected>Escolha a obra...</option>';
+                this.works.forEach(work => {
+                    const option = document.createElement('option');
+                    option.value = work.id;
+                    option.textContent = work.name;
+                    workSelect.appendChild(option);
+                });
+            }
+
             this.currentReportPhotos = [];
             this.setupPhotoUpload(4); // Default to 4
             document.getElementById('report-photo-count').value = '4';
@@ -849,7 +860,7 @@ class MaterialApp {
         for (let i = 0; i < count; i++) {
             const slot = document.createElement('div');
             slot.className = 'photo-slot';
-            slot.onclick = () => this.triggerPhotoUpload(i);
+            slot.onclick = (e) => this.triggerPhotoUpload(i, e);
             slot.id = `photo-slot-${i}`;
 
             slot.innerHTML = `
@@ -865,7 +876,8 @@ class MaterialApp {
         this.updateReportActions();
     }
 
-    triggerPhotoUpload(index) {
+    triggerPhotoUpload(index, event) {
+        if (event && event.target.tagName.toLowerCase() === 'select') return;
         const input = document.getElementById(`file-input-${index}`);
         if (input) input.click();
     }
@@ -886,7 +898,7 @@ class MaterialApp {
                 // CRITICAL FIX: Direct update and specific slot re-render
                 this.currentReportPhotos[index] = {
                     src: standardizedData,
-                    title: this.getAISuggestion(index)
+                    title: 'Registro da obra'
                 };
 
                 this.renderPhotoSlot(index);
@@ -907,8 +919,8 @@ class MaterialApp {
             img.onload = () => {
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
-                const targetWidth = 800;
-                const targetHeight = 450; // 16:9
+                const targetWidth = 1280;
+                const targetHeight = 720; // 16:9
                 canvas.width = targetWidth;
                 canvas.height = targetHeight;
 
@@ -931,20 +943,11 @@ class MaterialApp {
                 ctx.fillStyle = '#FFFFFF';
                 ctx.fillRect(0, 0, targetWidth, targetHeight);
                 ctx.drawImage(img, offsetX, offsetY, renderWidth, renderHeight);
-                resolve(canvas.toDataURL('image/jpeg', 0.4));
+                resolve(canvas.toDataURL('image/jpeg', 0.7));
             };
             img.onerror = reject;
             img.src = base64Str;
         });
-    }
-
-    getAISuggestion(index) {
-        const suggestions = [
-            'Vista frontal da obra', 'Andamento da fundação', 'Instalações hidráulicas',
-            'Revestimento interno', 'Estrutura metálica', 'Acabamento de reboco',
-            'Pintura externa', 'Instalação elétrica', 'Colocação de pisos', 'Vista aérea geral'
-        ];
-        return suggestions[index % suggestions.length];
     }
 
     renderPhotoSlot(index) {
@@ -955,10 +958,12 @@ class MaterialApp {
         // CRITICAL FIX: Keep the input but hide standard UI
         slot.innerHTML = `
             <img src="${photo.src}" alt="Foto ${index + 1}">
-            <input type="text" class="photo-caption-input" 
-                   value="${photo.title}" 
+            <select class="photo-caption-select" 
                    onchange="app.updatePhotoTitle(${index}, this.value)"
                    onclick="event.stopPropagation()">
+                <option value="Registro da obra" ${photo.title === 'Registro da obra' ? 'selected' : ''}>Registro da obra</option>
+                <option value="Registro de chegada de material" ${photo.title === 'Registro de chegada de material' ? 'selected' : ''}>Registro de chegada de material</option>
+            </select>
             <input type="file" id="file-input-${index}" style="display:none" accept="image/*" onchange="app.handlePhotoUpload(event, ${index})">
         `;
     }
@@ -981,13 +986,30 @@ class MaterialApp {
 
         const count = this.currentReportPhotos.length;
 
+        // Get Work Data
+        const workSelect = document.getElementById('report-work-select');
+        const selectedWorkId = workSelect ? workSelect.value : '';
+        let workInfoHtml = '';
+
+        if (selectedWorkId && this.works) {
+            const work = this.works.find(w => w.id == selectedWorkId);
+            if (work) {
+                workInfoHtml = `
+                    <p style="font-size: 13px; color: #333; margin: 3px 0;"><strong>Obra:</strong> ${work.name}</p>
+                    <p style="font-size: 11px; color: #666; margin: 2px 0;">${work.owner ? 'Proprietário: ' + work.owner : ''}</p>
+                    <p style="font-size: 11px; color: #666; margin: 2px 0;">${work.address ? 'Endereço: ' + work.address : ''}</p>
+                `;
+            }
+        }
+
         let html = `
-            <div style="text-align: center; border-bottom: 2px solid #005844; padding-bottom: 10px; margin-bottom: 10px;">
-                <img src="logo.jpg" style="max-height: 40px;">
-                <h1 style="font-size: 18px; color: #005844; margin: 5px 0;">RELATÓRIO FOTOGRÁFICO DE OBRA</h1>
-                <p style="font-size: 11px; color: #666;">Data: ${new Date().toLocaleDateString('pt-BR')}</p>
-            </div>
-            <div class="a4-photo-container">
+            <div style="position: relative; width: 100%; min-height: 800px; background-image: url('timbrado.jpg'); background-size: cover; background-position: center;">
+                <div style="padding-top: 100px; text-align: center; margin-bottom: 20px;">
+                    <h1 style="font-size: 18px; color: #005844; margin: 5px 0;">RELATÓRIO FOTOGRÁFICO</h1>
+                    ${workInfoHtml}
+                    <p style="font-size: 11px; color: #666; margin-top: 5px;">Data: ${new Date().toLocaleDateString('pt-BR')}</p>
+                </div>
+                <div class="a4-photo-container" style="padding: 0 40px;">
         `;
 
         this.currentReportPhotos.forEach((photo) => {
@@ -1001,7 +1023,10 @@ class MaterialApp {
             }
         });
 
-        html += '</div>';
+        html += `
+                </div>
+            </div>
+        `;
         content.innerHTML = html;
         modal.style.display = 'flex';
     }
@@ -1021,7 +1046,7 @@ class MaterialApp {
 
             const getLogoBase64 = async () => {
                 try {
-                    const response = await fetch('logo.jpg');
+                    const response = await fetch('timbrado.jpg');
                     const blob = await response.blob();
                     return new Promise(r => {
                         const reader = new FileReader();
@@ -1031,25 +1056,56 @@ class MaterialApp {
                 } catch { return null; }
             };
 
-            const logoStr = await getLogoBase64();
+            const bgStr = await getLogoBase64();
 
-            const renderPage = (photosSlice, isNewPage = false) => {
+            // Get Work Data
+            const workSelect = document.getElementById('report-work-select');
+            const selectedWorkId = workSelect ? workSelect.value : '';
+            let workName = 'Obra não informada';
+            let workOwner = '';
+            let workAddress = '';
+
+            if (selectedWorkId && this.works) {
+                const work = this.works.find(w => w.id == selectedWorkId);
+                if (work) {
+                    workName = work.name;
+                    workOwner = work.owner;
+                    workAddress = work.address;
+                }
+            }
+
+            const renderPage = (photosSlice, isNewPage = false, pageNum, totalPages) => {
                 if (isNewPage) doc.addPage();
+                
+                // Draw A4 Background Image
+                if (bgStr) {
+                    doc.addImage(bgStr, 'JPEG', 0, 0, 210, 297);
+                }
 
-                if (logoStr) doc.addImage(logoStr, 'JPEG', margin, margin, 35, 12);
                 doc.setFontSize(14);
                 doc.setTextColor(0, 88, 68);
-                doc.text('RELATÓRIO FOTOGRÁFICO', pageWidth / 2, margin + 8, { align: 'center' });
-                doc.setDrawColor(0, 88, 68);
-                doc.line(margin, margin + 15, pageWidth - margin, margin + 15);
+                doc.text('RELATÓRIO FOTOGRÁFICO', pageWidth / 2, 40, { align: 'center' }); // Lowered due to header
 
+                // Add Work Info
+                doc.setFontSize(9);
+                doc.setTextColor(100, 100, 100);
+                doc.text(`Obra: ${workName}`, pageWidth / 2, 46, { align: 'center' });
+                if (workOwner) doc.text(`Proprietário: ${workOwner}`, pageWidth / 2, 50, { align: 'center' });
+                if (workAddress) doc.text(`Endereço: ${workAddress}`, pageWidth / 2, 54, { align: 'center' });
+
+                // Add Page Number inside standard layout
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(9);
+                doc.text(`Pág. ${pageNum}/${totalPages}`, 30, 291); // Adjust if background image page number area is different
+
+                // --- CONTENT ---
                 const photoCount = photosSlice.length;
                 const photoWidth = (availableWidth - 10) / 2;
                 const photoHeight = (photoWidth * 9) / 16;
                 const rowGap = 15;
 
                 // Top Centered Layout (Starting below header)
-                let startY = 40;
+                let startY = 65; // Shift down for work info + header space
 
                 photosSlice.forEach((photo, i) => {
                     const col = i % 2;
@@ -1064,12 +1120,20 @@ class MaterialApp {
                     }
                     doc.setFontSize(9);
                     doc.setTextColor(50);
+                    // Center the caption below the image
                     doc.text(photo.title.toUpperCase(), x + (photoWidth / 2), y + photoHeight + 5, { align: 'center' });
                 });
             };
 
-            for (let i = 0; i < this.currentReportPhotos.length; i += 6) {
-                renderPage(this.currentReportPhotos.slice(i, i + 6), i > 0);
+            const totalPages = Math.ceil(this.currentReportPhotos.length / 6) || 1;
+            
+            if (this.currentReportPhotos.length === 0) {
+                 renderPage([], true, 1, 1);
+            } else {
+                for (let i = 0; i < this.currentReportPhotos.length; i += 6) {
+                    const pageNum = Math.floor(i / 6) + 1;
+                    renderPage(this.currentReportPhotos.slice(i, i + 6), i > 0, pageNum, totalPages);
+                }
             }
 
             doc.save(`Relatorio_Obra_${Date.now()}.pdf`);
