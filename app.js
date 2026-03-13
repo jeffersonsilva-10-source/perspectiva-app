@@ -12,6 +12,7 @@ class MaterialApp {
         this.viewHistory = [];
         this.currentView = 'home-view';
         this.materialCart = [];
+        this.storedLogo = localStorage.getItem('obra_logo_base64') || null;
         this.init();
     }
 
@@ -55,10 +56,10 @@ class MaterialApp {
         const titleMap = {
             'solicitar': 'Solicitar Material',
             'processar': 'Processar Material',
-            'historico': 'Histórico de Solicitações'
+            'historico': 'HistÃ³rico de SolicitaÃ§Ã­Âµes'
         };
         const titleEl = document.getElementById('material-view-title');
-        if (titleEl) titleEl.innerText = titleMap[mode] || 'Gestão de Materiais';
+        if (titleEl) titleEl.innerText = titleMap[mode] || 'GestÃ­o de Materiais';
 
         // Show/Hide Novo Pedido button (only in solicitar mode)
         const btnAdd = document.querySelector('.btn-add');
@@ -118,7 +119,7 @@ class MaterialApp {
                     </td>
                 ` : ''}
                 <td data-label="Data">${this.formatDate(item.data_pedido)}</td>
-                <td data-label="Descrição">${item.desc}</td>
+                <td data-label="DescriÃ§Ã­o">${item.desc}</td>
                 <td data-label="Qtd">${item.qtd}</td>
                 <td data-label="Unidade">${item.unid || '-'}</td>
                 <td data-label="Obra">${item.obra_name || '-'}</td>
@@ -128,7 +129,7 @@ class MaterialApp {
                 <td data-label="Processador" class="processor-info">${item.processador || '-'}</td>
                 <td data-label="Processamento" class="processor-info">${this.formatDate(item.data_processamento)}</td>
                 <td data-label="Entrega" class="processor-info">${this.formatDate(item.data_entrega)}</td>
-                <td data-label="Ações">
+                <td data-label="AÃ§Ã­Âµes">
                     <div class="btn-group" style="white-space: nowrap; display: flex; gap: 0.5rem; justify-content: flex-end;">
                         ${this.mode === 'historico' && item.status !== 'Entregue' ? `
                             <button class="action-btn" title="Marcar como Entregue" onclick="app.markAsDelivered(${item.id})" style="color:var(--success); border-color: rgba(34, 197, 94, 0.3)">
@@ -221,7 +222,7 @@ class MaterialApp {
         groupKeys.forEach(workId => {
             const workMaterials = grouped[workId];
             const work = this.works.find(w => w.id == workId); // Loose equality for ID
-            const obraName = work ? work.name : 'Obra não identificada';
+            const obraName = work ? work.name : 'Obra nÃ­o identificada';
             const obraEndereco = work ? work.address : '';
             const obraPontoRef = work ? (work.reference || '') : '';
 
@@ -371,7 +372,7 @@ class MaterialApp {
                 this.materials[index] = data;
             } else {
                 if (!data.desc || !data.qtd) {
-                    alert('Por favor, preencha a descrição e a quantidade.');
+                    alert('Por favor, preencha a descriÃ§Ã­o e a quantidade.');
                     return;
                 }
                 this.materials.push(data);
@@ -447,7 +448,7 @@ class MaterialApp {
                         <tr>
                             <th>Qtd</th>
                             <th>Unid</th>
-                            <th>Descrição</th>
+                            <th>DescriÃ§Ã­o</th>
                             <th style="width: 40px"></th>
                         </tr>
                     </thead>
@@ -547,11 +548,11 @@ class MaterialApp {
             tr.innerHTML = `
                 <td data-label="Data">${this.formatDate(work.date_created.split('T')[0])}</td>
                 <td data-label="Nome">${work.name}</td>
-                <td data-label="Endereço">${work.address}</td>
-                <td data-label="Referência">${work.reference || '-'}</td>
-                <td data-label="Proprietário">${work.owner}</td>
+                <td data-label="EndereÃ§o">${work.address}</td>
+                <td data-label="ReferÃªncia">${work.reference || '-'}</td>
+                <td data-label="ProprietÃ­Â¡rio">${work.owner}</td>
                 <td data-label="Telefone">${work.phone}</td>
-                <td data-label="Ações">
+                <td data-label="AÃ§Ã­Âµes">
                     <div class="btn-group" style="display: flex; gap: 0.5rem; justify-content: flex-end;">
                         <button class="action-btn" title="Editar" onclick="app.editWork(${work.id})">
                             <i data-lucide="edit-2" style="width:16px; margin-right: 4px;"></i>
@@ -611,7 +612,7 @@ class MaterialApp {
 
     openModal(data = null) {
         if (!data && this.works.length === 0) {
-            alert('Você precisa cadastrar uma obra antes de fazer um pedido!');
+            alert('VocÃª precisa cadastrar uma obra antes de fazer um pedido!');
             this.switchView('works-create-view');
             return;
         }
@@ -674,8 +675,8 @@ class MaterialApp {
             const dataProcessamentoEl = document.getElementById('data_processamento');
             if (dataProcessamentoEl) dataProcessamentoEl.required = true;
         } else if (isHistorico && data) {
-            if (modalTitle) modalTitle.innerText = 'Alterar Pedido Histórico';
-            if (submitBtnText) submitBtnText.innerText = 'Salvar Alterações';
+            if (modalTitle) modalTitle.innerText = 'Alterar Pedido HistÃ³rico';
+            if (submitBtnText) submitBtnText.innerText = 'Salvar AlteraÃ§Ã­Âµes';
 
             const workSelectEl = document.getElementById('work-select');
             if (workSelectEl) workSelectEl.required = true;
@@ -691,7 +692,7 @@ class MaterialApp {
         } else {
             if (modalTitle) modalTitle.innerText = data ? 'Alterar Pedido' : 'Novo Pedido';
             if (processarGrp) processarGrp.style.display = 'none';
-            if (submitBtnText) submitBtnText.innerText = data ? 'Salvar Alterações' : 'Finalizar Solicitação';
+            if (submitBtnText) submitBtnText.innerText = data ? 'Salvar AlteraÃ§Ã­Âµes' : 'Finalizar SolicitaÃ§Ã­o';
             if (cartBtn && !data) cartBtn.style.display = 'inline-flex';
 
             const workSelectEl = document.getElementById('work-select');
@@ -741,7 +742,7 @@ class MaterialApp {
 
             // Handle unit loading
             const unitSelect = document.getElementById('unid');
-            const standardUnits = ['kg', 'sacos', 'm³', 'm²', 'unid', 'pacotes', 'milheiros'];
+            const standardUnits = ['kg', 'sacos', 'mÃ­â€šÃ‚Â³', 'mÃ­â€šÃ‚Â²', 'unid', 'pacotes', 'milheiros'];
             if (unitSelect) {
                 if (standardUnits.includes(data.unid)) {
                     unitSelect.value = data.unid;
@@ -882,35 +883,49 @@ class MaterialApp {
         if (input) input.click();
     }
 
-    handlePhotoUpload(event, index) {
-        const file = event.target.files[0];
+    async handlePhotoUpload(event, index) {
+        let file = event.target.files[0];
         if (!file) return;
 
         const slot = document.getElementById(`photo-slot-${index}`);
         slot.classList.add('loading');
 
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            const imageData = e.target.result;
-            try {
-                const standardizedData = await this.standardizeImage(imageData);
-
-                // CRITICAL FIX: Direct update and specific slot re-render
-                this.currentReportPhotos[index] = {
-                    src: standardizedData,
-                    title: 'Registro da obra'
-                };
-
-                this.renderPhotoSlot(index);
-                this.updateReportActions();
-            } catch (err) {
-                console.error('Erro ao processar imagem:', err);
-                alert('Erro ao processar imagem. Tente outro arquivo.');
-            } finally {
-                slot.classList.remove('loading');
+        try {
+            // Suporte para HEIC (iPhone)
+            if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
+                if (window.heic2any) {
+                    const blob = await heic2any({
+                        blob: file,
+                        toType: "image/jpeg",
+                        quality: 0.7
+                    });
+                    file = Array.isArray(blob) ? blob[0] : blob;
+                }
             }
-        };
-        reader.readAsDataURL(file);
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const imageData = e.target.result;
+                try {
+                    const standardizedData = await this.standardizeImage(imageData);
+                    this.currentReportPhotos[index] = {
+                        src: standardizedData,
+                        title: 'Registro da obra'
+                    };
+                    this.renderPhotoSlot(index);
+                    this.updateReportActions();
+                } catch (err) {
+                    console.error('Erro ao processar imagem:', err);
+                } finally {
+                    slot.classList.remove('loading');
+                }
+            };
+            reader.readAsDataURL(file);
+        } catch (err) {
+            console.error('Erro na conversão HEIC:', err);
+            slot.classList.remove('loading');
+            alert('Não foi possível processar esta foto do iPhone.');
+        }
     }
 
     standardizeImage(base64Str) {
@@ -943,10 +958,63 @@ class MaterialApp {
                 ctx.fillStyle = '#FFFFFF';
                 ctx.fillRect(0, 0, targetWidth, targetHeight);
                 ctx.drawImage(img, offsetX, offsetY, renderWidth, renderHeight);
-                resolve(canvas.toDataURL('image/jpeg', 0.7));
+                
+                try {
+                    resolve(canvas.toDataURL('image/jpeg', 0.8));
+                } catch(e) {
+                    // Fallback to original image if canvas throws Tainted error
+                    resolve(base64Str);
+                }
             };
-            img.onerror = reject;
+            img.onerror = () => {
+                reject(new Error("Failed to load image for standardization"));
+            };
             img.src = base64Str;
+        });
+    }
+
+    async handleLogoUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        try {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const base64 = e.target.result;
+                this.storedLogo = base64;
+                localStorage.setItem('obra_logo_base64', base64);
+                alert('Logo configurada com sucesso!');
+            };
+            reader.readAsDataURL(file);
+        } catch (err) {
+            console.error('Erro ao fazer upload da logo:', err);
+            alert('Erro ao processar a logo.');
+        }
+    }
+
+    getImageAsBase64(url) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            // REMOVE crossOrigin for local files to avoid CORS issues on file:// protocol
+            img.onload = () => {
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    const dataURL = canvas.toDataURL('image/jpeg', 0.8);
+                    resolve(dataURL);
+                } catch (e) {
+                    console.error("Canvas conversion failed for " + url, e);
+                    resolve(null); // Resolve with null instead of rejecting to keep the flow
+                }
+            };
+            img.onerror = () => {
+                console.error("Image load failed for " + url);
+                resolve(null);
+            };
+            img.src = url;
         });
     }
 
@@ -958,14 +1026,19 @@ class MaterialApp {
         // CRITICAL FIX: Keep the input but hide standard UI
         slot.innerHTML = `
             <img src="${photo.src}" alt="Foto ${index + 1}">
-            <select class="photo-caption-select" 
-                   onchange="app.updatePhotoTitle(${index}, this.value)"
-                   onclick="event.stopPropagation()">
-                <option value="Registro da obra" ${photo.title === 'Registro da obra' ? 'selected' : ''}>Registro da obra</option>
-                <option value="Registro de chegada de material" ${photo.title === 'Registro de chegada de material' ? 'selected' : ''}>Registro de chegada de material</option>
-            </select>
+            <div class="photo-tools" onclick="event.stopPropagation()">
+                <select class="photo-caption-select" 
+                       onchange="app.updatePhotoTitle(${index}, this.value)">
+                    <option value="Registro da obra" ${photo.title === 'Registro da obra' ? 'selected' : ''}>Registro da obra</option>
+                    <option value="Registro de chegada de material" ${photo.title === 'Registro de chegada de material' ? 'selected' : ''}>Registro de chegada de material</option>
+                </select>
+                <button class="action-btn-mini" onclick="app.triggerPhotoUpload(${index}, event)" title="Trocar Foto">
+                    <i data-lucide="refresh-cw"></i>
+                </button>
+            </div>
             <input type="file" id="file-input-${index}" style="display:none" accept="image/*" onchange="app.handlePhotoUpload(event, ${index})">
         `;
+        lucide.createIcons();
     }
 
     updatePhotoTitle(index, title) {
@@ -977,47 +1050,59 @@ class MaterialApp {
     updateReportActions() {
         const uploadedCount = this.currentReportPhotos.filter(p => p !== null).length;
         const actions = document.querySelector('.report-actions');
-        actions.style.display = uploadedCount === this.currentReportPhotos.length ? 'flex' : 'none';
+        if (actions) actions.style.display = uploadedCount === this.currentReportPhotos.length ? 'flex' : 'none';
     }
 
     previewReport() {
         const modal = document.getElementById('report-preview-modal');
         const content = document.getElementById('report-preview-content');
 
-        const count = this.currentReportPhotos.length;
-
-        // Get Work Data
         const workSelect = document.getElementById('report-work-select');
         const selectedWorkId = workSelect ? workSelect.value : '';
-        let workInfoHtml = '';
+        let workName = "Obra nao selecionada";
+        let owner = "Não informado";
+        let address = "Não informado";
+        let phone = "Não informado";
+        let reference = "Não informado";
 
         if (selectedWorkId && this.works) {
             const work = this.works.find(w => w.id == selectedWorkId);
             if (work) {
-                workInfoHtml = `
-                    <p style="font-size: 13px; color: #333; margin: 3px 0;"><strong>Obra:</strong> ${work.name}</p>
-                    <p style="font-size: 11px; color: #666; margin: 2px 0;">${work.owner ? 'Proprietário: ' + work.owner : ''}</p>
-                    <p style="font-size: 11px; color: #666; margin: 2px 0;">${work.address ? 'Endereço: ' + work.address : ''}</p>
-                `;
+                workName = work.name;
+                owner = work.owner || "Não informado";
+                address = work.address || "Não informado";
+                phone = work.phone || "Não informado";
+                reference = work.reference || "Não informado";
             }
         }
 
         let html = `
-            <div style="position: relative; width: 100%; min-height: 800px; background-image: url('timbrado.jpg'); background-size: cover; background-position: center;">
-                <div style="padding-top: 100px; text-align: center; margin-bottom: 20px;">
-                    <h1 style="font-size: 18px; color: #005844; margin: 5px 0;">RELATÓRIO FOTOGRÁFICO</h1>
-                    ${workInfoHtml}
-                    <p style="font-size: 11px; color: #666; margin-top: 5px;">Data: ${new Date().toLocaleDateString('pt-BR')}</p>
+            <div style="font-family: Arial, sans-serif; background: white; padding: 20px; box-sizing: border-box; color: #000; position: relative;">
+                <div style="text-align: center; margin-bottom: 5px;">
+                    <img src="${this.storedLogo || 'logo_cabecalho.jpg'}" style="max-height: 70px; display: block; margin: 0 auto 10px;">
+                    <p style="font-size: 11px; font-weight: bold; margin: 2px 0;">CNPJ: 19.737.981.0001-82 / CONTATO: (91) 98453-0611</p>
+                    <p style="font-size: 10px; font-weight: bold; margin: 2px 0;">ENDERECO: RUA CORONEL RAIMUNDO LEAO N 1202 - BAIRRO CENTRO - CAMETA-PA</p>
                 </div>
-                <div class="a4-photo-container" style="padding: 0 40px;">
+                <div style="height: 12px; background: #01433B; width: 100%; margin: 10px 0 20px;"></div>
+                <div style="text-align: center; margin-bottom: 25px;">
+                    <h1 style="color: #01433B; font-size: 20px; margin: 0; font-weight: bold;">RELATORIO FOTOGRAFICO</h1>
+                </div>
+                <div style="margin-bottom: 25px; padding-left: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 11px;">
+                    <p style="margin: 0;"><strong>Obra:</strong> ${workName}</p>
+                    <p style="margin: 0;"><strong>Data:</strong> ${new Date().toLocaleDateString('pt-BR')}</p>
+                    <p style="margin: 0;"><strong>Proprietário:</strong> ${owner}</p>
+                    <p style="margin: 0;"><strong>Telefone:</strong> ${phone}</p>
+                    <p style="margin: 0; grid-column: 1 / span 2;"><strong>Endereço:</strong> ${address} ${reference ? `(Ref: ${reference})` : ''}</p>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; min-height: 400px; padding: 0 10px;">
         `;
 
         this.currentReportPhotos.forEach((photo) => {
-            if (photo) {
+            if (photo && photo.src) {
                 html += `
-                    <div class="a4-photo-item">
-                        <img src="${photo.src}">
-                        <p>${photo.title.toUpperCase()}</p>
+                    <div style="text-align: center;">
+                        <img src="${photo.src}" style="width: 100%; border: 1px solid #ccc; border-radius: 2px;">
+                        <p style="font-size: 11px; margin-top: 5px; font-weight: bold; color: #01433B;">${photo.title}</p>
                     </div>
                 `;
             }
@@ -1025,6 +1110,14 @@ class MaterialApp {
 
         html += `
                 </div>
+                <div style="margin-top: 40px;">
+                    <div style="height: 12px; background: #01433B; width: 100%;"></div>
+                    <div style="text-align: center; padding: 10px 0; font-size: 10px; font-weight: bold;">
+                        <p style="margin: 2px 0;">INSTAGRAM: @PERSPECTIVA_PEC</p>
+                        <p style="margin: 2px 0;">EMAIL: PERSPECTIVAPROJETOS@HOTMAIL.COM.BR</p>
+                    </div>
+                </div>
+                <p style="text-align: right; font-size: 10px; font-weight: bold; margin-top: -25px; padding-right: 20px;">PAGINA 1/1</p>
             </div>
         `;
         content.innerHTML = html;
@@ -1042,107 +1135,145 @@ class MaterialApp {
             const pageWidth = 210;
             const pageHeight = 297;
             const margin = 15;
-            const availableWidth = pageWidth - (margin * 2);
 
-            const getLogoBase64 = async () => {
+            // Use stored logo if available
+            let logoBase64 = this.storedLogo;
+            
+            if (!logoBase64) {
                 try {
-                    const response = await fetch('timbrado.jpg');
-                    const blob = await response.blob();
-                    return new Promise(r => {
-                        const reader = new FileReader();
-                        reader.onloadend = () => r(reader.result);
-                        reader.readAsDataURL(blob);
-                    });
-                } catch { return null; }
-            };
+                    // Try from file as fallback
+                    logoBase64 = await this.getImageAsBase64('logo_cabecalho.jpg');
+                } catch (e) {
+                    console.error("Could not load local file logo:", e);
+                }
+            }
 
-            const bgStr = await getLogoBase64();
+            let logoW = 0, logoH = 0, logoX = 0, logoY = 5;
+            if (logoBase64) {
+                try {
+                    const imgProps = doc.getImageProperties(logoBase64);
+                    const maxWidth = 75; 
+                    const maxHeight = 30;
+                    const ratio = imgProps.width / imgProps.height;
+                    
+                    logoW = maxWidth;
+                    logoH = maxWidth / ratio;
+                    
+                    if (logoH > maxHeight) {
+                        logoH = maxHeight;
+                        logoW = maxHeight * ratio;
+                    }
+                    logoX = (pageWidth - logoW) / 2;
+                } catch (e) { console.error('Logo prop error:', e); }
+            }
 
-            // Get Work Data
+            // Reference Y for content below logo
+            const contentStartY = logoBase64 ? (logoY + logoH + 3) : 10;
+
             const workSelect = document.getElementById('report-work-select');
             const selectedWorkId = workSelect ? workSelect.value : '';
-            let workName = 'Obra não informada';
-            let workOwner = '';
-            let workAddress = '';
+            const work = this.works.find(w => w.id == selectedWorkId) || {};
 
-            if (selectedWorkId && this.works) {
-                const work = this.works.find(w => w.id == selectedWorkId);
-                if (work) {
-                    workName = work.name;
-                    workOwner = work.owner;
-                    workAddress = work.address;
-                }
-            }
-
-            const renderPage = (photosSlice, isNewPage = false, pageNum, totalPages) => {
-                if (isNewPage) doc.addPage();
-                
-                // Draw A4 Background Image
-                if (bgStr) {
-                    doc.addImage(bgStr, 'JPEG', 0, 0, 210, 297);
+            const renderPageLayout = (pageNum, totalPages) => {
+                if (logoBase64 && logoW > 0) {
+                    try {
+                        const imgProps = doc.getImageProperties(logoBase64);
+                        doc.addImage(logoBase64, (imgProps.fileType || 'JPEG'), logoX, logoY, logoW, logoH);
+                    } catch(e) { console.error('Logo addImage error:', e); }
                 }
 
-                doc.setFontSize(14);
-                doc.setTextColor(0, 88, 68);
-                doc.text('RELATÓRIO FOTOGRÁFICO', pageWidth / 2, 40, { align: 'center' }); // Lowered due to header
+                doc.setFontSize(8);
+                doc.setFont("helvetica", "bold");
+                doc.setTextColor(0, 0, 0);
+                doc.text("CNPJ: 19.737.981.0001-82 / CONTATO: (91) 98453-0611", pageWidth / 2, contentStartY + 1, { align: 'center' });
+                doc.text("ENDERECO: RUA CORONEL RAIMUNDO LEAO N 1202 - BAIRRO CENTRO - CAMETA-PA", pageWidth / 2, contentStartY + 5, { align: 'center' });
 
-                // Add Work Info
+                doc.setFillColor(1, 67, 59);
+                doc.rect(0, contentStartY + 8, pageWidth, 4, 'F');
+
+                doc.setFontSize(16);
+                doc.setTextColor(1, 67, 59);
+                doc.text("RELATORIO FOTOGRAFICO", pageWidth / 2, contentStartY + 20, { align: 'center' });
+
+                // Work Details
                 doc.setFontSize(9);
-                doc.setTextColor(100, 100, 100);
-                doc.text(`Obra: ${workName}`, pageWidth / 2, 46, { align: 'center' });
-                if (workOwner) doc.text(`Proprietário: ${workOwner}`, pageWidth / 2, 50, { align: 'center' });
-                if (workAddress) doc.text(`Endereço: ${workAddress}`, pageWidth / 2, 54, { align: 'center' });
+                doc.setTextColor(0, 0, 0);
+                doc.setFont("helvetica", "bold");
+                doc.text("Obra: ", margin, contentStartY + 30);
+                doc.setFont("helvetica", "normal");
+                doc.text(work.name || "-", margin + 12, contentStartY + 30);
 
-                // Add Page Number inside standard layout
-                doc.setTextColor(255, 255, 255);
-                doc.setFontSize(9);
-                doc.text(`Pág. ${pageNum}/${totalPages}`, 30, 291); // Adjust if background image page number area is different
+                doc.setFont("helvetica", "bold");
+                doc.text("Proprietário: ", margin, contentStartY + 35);
+                doc.setFont("helvetica", "normal");
+                doc.text(work.owner || "-", margin + 22, contentStartY + 35);
 
-                // --- CONTENT ---
-                const photoCount = photosSlice.length;
-                const photoWidth = (availableWidth - 10) / 2;
-                const photoHeight = (photoWidth * 9) / 16;
-                const rowGap = 15;
+                doc.setFont("helvetica", "bold");
+                doc.text("Telefone: ", margin + 100, contentStartY + 35);
+                doc.setFont("helvetica", "normal");
+                doc.text(work.phone || "-", margin + 117, contentStartY + 35);
 
-                // Top Centered Layout (Starting below header)
-                let startY = 65; // Shift down for work info + header space
+                doc.setFont("helvetica", "bold");
+                doc.text("Endereço: ", margin, contentStartY + 40);
+                doc.setFont("helvetica", "normal");
+                doc.text((work.address || "-") + (work.reference ? ` (Ref: ${work.reference})` : ""), margin + 18, contentStartY + 40);
 
-                photosSlice.forEach((photo, i) => {
-                    const col = i % 2;
-                    const row = Math.floor(i / 2);
-                    const x = margin + (col * (photoWidth + 10));
-                    const y = startY + (row * (photoHeight + rowGap));
+                doc.setFont("helvetica", "normal");
+                doc.text("Data: " + new Date().toLocaleDateString('pt-BR'), pageWidth - margin, contentStartY + 30, { align: 'right' });
 
-                    if (photo && photo.src) {
-                        try {
-                            doc.addImage(photo.src, 'JPEG', x, y, photoWidth, photoHeight);
-                        } catch (e) { console.error('PDF Img Error:', e); }
-                    }
-                    doc.setFontSize(9);
-                    doc.setTextColor(50);
-                    // Center the caption below the image
-                    doc.text(photo.title.toUpperCase(), x + (photoWidth / 2), y + photoHeight + 5, { align: 'center' });
-                });
+                // Footer with 3cm border (30mm)
+                const footerY = pageHeight - 30;
+                doc.setFillColor(1, 67, 59);
+                doc.rect(0, footerY, pageWidth, 4, 'F');
+
+                doc.setFontSize(8);
+                doc.setFont("helvetica", "bold");
+                doc.setTextColor(0, 0, 0);
+                doc.text("INSTAGRAM: @PERSPECTIVA_PEC", pageWidth / 2, footerY + 10, { align: 'center' });
+                doc.text("EMAIL: PERSPECTIVAPROJETOS@HOTMAIL.COM.BR", pageWidth / 2, footerY + 14, { align: 'center' });
+                doc.text("PAGINA " + pageNum + "/" + totalPages, pageWidth - margin, footerY + 12, { align: 'right' });
             };
 
-            const totalPages = Math.ceil(this.currentReportPhotos.length / 6) || 1;
-            
-            if (this.currentReportPhotos.length === 0) {
-                 renderPage([], true, 1, 1);
-            } else {
-                for (let i = 0; i < this.currentReportPhotos.length; i += 6) {
-                    const pageNum = Math.floor(i / 6) + 1;
-                    renderPage(this.currentReportPhotos.slice(i, i + 6), i > 0, pageNum, totalPages);
-                }
+            const photosPerPage = 6;
+            const totalPages = Math.ceil(this.currentReportPhotos.length / photosPerPage) || 1;
+
+            for (let i = 0; i < totalPages; i++) {
+                if (i > 0) doc.addPage();
+                const pageNum = i + 1;
+                renderPageLayout(pageNum, totalPages);
+                
+                const startIdx = i * photosPerPage;
+                const pagePhotos = this.currentReportPhotos.slice(startIdx, startIdx + photosPerPage);
+
+                let startY = 82; // Adjusted for more work info
+                const photoWidth = (pageWidth - (margin * 3)) / 2;
+                const photoHeight = 50; // Slightly smaller to fit info
+
+                pagePhotos.forEach((photo, idx) => {
+                    if (photo && photo.src) {
+                        const row = Math.floor(idx / 2);
+                        const col = idx % 2;
+                        const x = margin + (col * (photoWidth + margin));
+                        const y = startY + (row * (photoHeight + 15));
+
+                        try {
+                            doc.addImage(photo.src, 'JPEG', x, y, photoWidth, photoHeight, undefined, 'FAST');
+                            doc.setFontSize(9);
+                            doc.setFont("helvetica", "bold");
+                            doc.setTextColor(1, 67, 59);
+                            doc.text(photo.title.toUpperCase(), x + (photoWidth/2), y + photoHeight + 5, { align: 'center' });
+                        } catch (e) { console.error('PDF Img Error:', e); }
+                    }
+                });
             }
 
-            doc.save(`Relatorio_Obra_${Date.now()}.pdf`);
+            doc.save("Relatorio_Obra_" + Date.now() + ".pdf");
             this.saveReportToHistory();
             this.closeReportPreview();
-            alert('Relatório gerado!');
+            alert("Relatorio gerado com sucesso!");
         } catch (err) {
             console.error(err);
-            alert('Erro ao gerar PDF: ' + err.message);
+            alert("Erro ao gerar PDF: " + err.message);
         }
     }
 
@@ -1151,7 +1282,7 @@ class MaterialApp {
             id: Date.now(),
             date: new Date().toISOString(),
             photoCount: this.currentReportPhotos.length,
-            title: `Relatório de ${this.currentReportPhotos.length} fotos`,
+            title: "RELATORIO de " + this.currentReportPhotos.length + " fotos",
             photos: this.currentReportPhotos
         };
         this.reports.unshift(report);
@@ -1160,31 +1291,31 @@ class MaterialApp {
 
     renderReportHistory() {
         const list = document.getElementById('report-list');
-        list.innerHTML = '';
-
-        if (this.reports.length === 0) {
-            list.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted);">Nenhum relatório encontrado.</p>';
-            return;
+        if (list) {
+            list.innerHTML = '';
+            if (this.reports.length === 0) {
+                list.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted);">Nenhum RELATORIO encontrado.</p>';
+                return;
+            }
+            this.reports.forEach(report => {
+                const card = document.createElement('div');
+                card.className = 'report-item-card';
+                card.innerHTML = `
+                    <h4>${report.title}</h4>
+                    <div class="date">${new Date(report.date).toLocaleDateString('pt-BR')} ${new Date(report.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
+                    <div style="display: flex; gap: 0.5rem; margin-top: auto;">
+                        <button class="action-btn" onclick="app.reprintReport(${report.id})">
+                            <i data-lucide="printer"></i> Reimprimir
+                        </button>
+                        <button class="action-btn" onclick="app.deleteReport(${report.id})" style="color: var(--danger)">
+                            <i data-lucide="trash-2"></i>
+                        </button>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+            lucide.createIcons();
         }
-
-        this.reports.forEach(report => {
-            const card = document.createElement('div');
-            card.className = 'report-item-card';
-            card.innerHTML = `
-                <h4>${report.title}</h4>
-                <div class="date">${new Date(report.date).toLocaleDateString('pt-BR')} ${new Date(report.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
-                <div style="display: flex; gap: 0.5rem; margin-top: auto;">
-                    <button class="action-btn" onclick="app.reprintReport(${report.id})">
-                        <i data-lucide="printer"></i> Reimprimir
-                    </button>
-                    <button class="action-btn" onclick="app.deleteReport(${report.id})" style="color: var(--danger)">
-                        <i data-lucide="trash-2"></i>
-                    </button>
-                </div>
-            `;
-            list.appendChild(card);
-        });
-        lucide.createIcons();
     }
 
     reprintReport(id) {
@@ -1196,7 +1327,7 @@ class MaterialApp {
     }
 
     deleteReport(id) {
-        if (confirm('Deseja excluir este relatório do histórico?')) {
+        if (confirm('Deseja excluir este RELATORIO do histórico?')) {
             this.reports = this.reports.filter(r => r.id !== id);
             localStorage.setItem('obra_reports', JSON.stringify(this.reports));
             this.renderReportHistory();

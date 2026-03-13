@@ -19,6 +19,8 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- jsPDF Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- HEIC Support for iPhone -->
+    <script src="https://unpkg.com/heic2any@0.0.4/dist/heic2any.js"></script>
 </head>
 
 <body>
@@ -374,6 +376,15 @@
                     <h3>Buscar Relatórios</h3>
                     <p>Consulte e imprima relatórios já realizados.</p>
                 </div>
+
+                <div class="card" onclick="document.getElementById('logo-upload-input').click()">
+                    <div class="card-icon" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24;">
+                        <i data-lucide="image"></i>
+                    </div>
+                    <h3>Configurar Logo</h3>
+                    <p>Atualize a logo que aparece nos cabeçalhos dos relatórios.</p>
+                    <input type="file" id="logo-upload-input" style="display: none;" accept="image/*" onchange="app.handleLogoUpload(event)">
+                </div>
             </div>
         </section>
 
@@ -394,20 +405,12 @@
             </header>
 
             <div class="report-setup-container">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                <div style="display: grid; grid-template-columns: 1fr; gap: 1rem; margin-bottom: 1.5rem;">
                     <div class="form-group" style="margin-bottom: 0;">
                         <label>Obra</label>
                         <select id="report-work-select" required>
                             <option value="" disabled selected>Escolha a obra...</option>
                             <!-- Dynamically populated -->
-                        </select>
-                    </div>
-
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label>Título Padrão das Fotos</label>
-                        <select id="report-photo-title" required onchange="app.updateAllPhotoTitles()">
-                            <option value="Registro da obra" selected>Registro da obra</option>
-                            <option value="Registro de chegada de material">Registro de chegada de material</option>
                         </select>
                     </div>
                 </div>
